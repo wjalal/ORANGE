@@ -1,9 +1,9 @@
-from train.OrganAge import CreateOrganAgeObject
+from train.organage import OrganAge
 import pandas as pd
 
 def test_OrganAge():
     print ("Testing on trained model")
-    data = CreateOrganAgeObject()
+    data = OrganAge.CreateOrganAgeObject()
     md_hot = pd.read_csv("tests/md_hot.csv").set_index("ID")
     df_prot = pd.read_csv("tests/df_prot.csv").set_index("ID")
 

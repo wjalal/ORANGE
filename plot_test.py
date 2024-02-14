@@ -1,4 +1,4 @@
-from organage import OrganAge
+from src.og.organage import OrganAge
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
