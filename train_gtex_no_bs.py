@@ -27,12 +27,8 @@ from sklearn.linear_model import Lasso
 from sklearn.model_selection import GridSearchCV
 
 def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
-                                 seed_list, 
                                  performance_CUTOFF, train_cohort,
                                  norm, agerange, NPOOL=15):
-    seed_list = seed_list['BS_Seed']
-    NUM_BOOTSTRAP=len(seed_list)
-    print(seed_list)
     # final lists for output
     all_coef_dfs = []   
     
@@ -55,7 +51,7 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     df_prot_train_tissue = pd.DataFrame(tmp, index=df_prot_train_tissue.index, columns=df_prot_train_tissue.columns)
     
     # save the scaler
-    path = 'gtex/train_bs10/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
+    path = 'gtex/train_no_bs/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
     fn = '/'+train_cohort+'_'+agerange+'_based_'+tissue+'_gene_zscore_scaler.pkl'
     os.makedirs(path)
     pickle.dump(scaler, open(path+fn, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
@@ -72,54 +68,46 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     print (df_X_train)
 
     # Bootstrap training
-    print ("starting bootstrap training...")
+    print ("starting training...")
     pool = mp.Pool(NPOOL)
-    input_list = [([df_X_train, df_Y_train, train_cohort,
-                    tissue, performance_CUTOFF, norm, agerange] + [seed_list[i]]) for i in range(NUM_BOOTSTRAP)]        
-    coef_list = pool.starmap(Bootstrap_train, input_list)
+    input_list = [([df_X_train, df_Y_train, train_cohort, tissue, performance_CUTOFF, norm, agerange])]   
+    coef_list = pool.starmap(Single_train, input_list)
     pool.close()
     pool.join()
     
-    df_tissue_coef = pd.DataFrame(coef_list, columns=["tissue", "BS_Seed", "alpha", "y_intercept"]+list(df_X_train.columns))
+    df_tissue_coef = pd.DataFrame(coef_list, columns=["tissue", "alpha", "y_intercept"]+list(df_X_train.columns))
     all_coef_dfs.append(df_tissue_coef)
     
     dfcoef=pd.concat(all_coef_dfs, join="outer")
     return dfcoef
   
     
-def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
-              tissue, performance_CUTOFF, norm, agerange, seed):
-    
-    #setup
-    X_train_sample = df_X_train.sample(frac=1, replace=True, random_state=seed).to_numpy()
-    Y_train_sample = df_Y_train.sample(frac=1, replace=True, random_state=seed).to_numpy()    
-    print("did bootstrap setup... (seed = ", seed, ")")
-    
+def Single_train(df_X_train, df_Y_train, train_cohort, tissue, performance_CUTOFF, norm, agerange):
     # LASSO
-    print ("starting lasso?... (seed = ", seed, ")")
+    print ("starting lasso?...")
     lasso = Lasso(random_state=0, tol=0.01, max_iter=5000)
     alphas = np.logspace(-3, 1, 100)
     tuned_parameters = [{'alpha': alphas}]
     n_folds=5
-    print("initialised lasso params setup... (seed = ", seed, ")")
+    print("initialised lasso params setup... ")
     clf = GridSearchCV(lasso, tuned_parameters, cv=n_folds, scoring="neg_mean_squared_error", refit=False)
-    print("gridSearch done... (seed = ", seed, ")")
-    clf.fit(X_train_sample, Y_train_sample)
-    print("gridSearch fitting done... (seed = ", seed, ")")
+    print("gridSearch done... ")
+    clf.fit(df_X_train, df_Y_train)
+    print("gridSearch fitting done... ")
     gsdf = pd.DataFrame(clf.cv_results_)    
-    print("Plot nad Pick STARTING :(... (seed = ", seed, ")")
+    print("Plot nad Pick STARTING :(... ")
     best_alpha=Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
-    print("Plot nad Pick done... (seed = ", seed, ")")
+    print("Plot nad Pick done...")
     # Retrain 
     lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=5000)
-    lasso.fit(X_train_sample, Y_train_sample)
-    print ("lasso retrained.. (seed = ", seed, ")")
+    lasso.fit(df_X_train, df_Y_train)
+    print ("lasso retrained...")
     # SAVE MODEL
-    savefp="gtex/train_bs10/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_lasso_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
+    savefp="gtex/train_no_bs/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_lasso_"+tissue+"_aging_model.pkl"
     pickle.dump(lasso, open(savefp, 'wb'))
     
     # SAVE coefficients            
-    coef_list = [tissue, seed, best_alpha, lasso.intercept_[0]] + list(lasso.coef_)
+    coef_list = [tissue, best_alpha, lasso.intercept_[0]] + list(lasso.coef_)
 
     return coef_list
     
@@ -177,16 +165,13 @@ train_cohort="gtexV8"
 df_prot_train = pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
 md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid.txt", sep='\s+').set_index("SUBJID")
 # tissue_plist_dict = json.load(open("train/data/tissue_pproteinlist_5k_dict_gtex_tissue_enriched_fc4_stable_assay_proteins_seqid.json"))
-bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_small.json"))
 
 #95% performance
 start_time = time.time()
 dfcoef = Train_all_tissue_aging_model(md_hot_train, #meta data dataframe with age and sex (binary) as columns
                                        df_prot_train, #protein expression dataframe with SeqIds as columns
-                                       bs_seed_list, #bootstrap seeds
                                        performance_CUTOFF=performance_CUTOFF, #heuristic for model simplification
                                        NPOOL=15, #parallelize
-                                       
                                        train_cohort=train_cohort, #these three variables for file naming
                                        norm=norm, 
                                        agerange=agerange, 
