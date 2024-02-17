@@ -57,7 +57,7 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     # save the scaler
     path = 'gtex/train_bs10/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
     fn = '/'+train_cohort+'_'+agerange+'_based_'+tissue+'_gene_zscore_scaler.pkl'
-    os.makedirs(path)
+    # os.makedirs(path)
     pickle.dump(scaler, open(path+fn, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
     print("z-scaler is ready...")
 

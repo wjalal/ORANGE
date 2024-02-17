@@ -6,7 +6,8 @@ import seaborn as sns
 def test_OrganAge():
     print ("Testing on trained model")
     data = GTExTissueAgeBootstrap.CreateGTExTissueAgeObject()
-    df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TEST.tsv", sep='\s+').set_index("Name")
+    df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/artery_coronary.TEST.tsv", sep='\s+').set_index("Name")
+    # df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TEST.tsv", sep='\s+').set_index("Name")
     md_hot = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid.txt", sep='\s+').set_index("SUBJID")
     df_prot.index.names = ['SUBJID']
     md_hot = md_hot.merge(right = df_prot.index.to_series(), how='inner', left_index=True, right_index=True)
@@ -20,6 +21,7 @@ def test_OrganAge():
     return dfres
 
 res = test_OrganAge()
+print (res[["DTHHRDY"]])
 toplot = res.loc[res.Organ=="artery_coronary"]
 toplot = toplot.sort_values("Predicted_Age")
 ageGap = toplot.eval("Predicted_Age - AGE").rename("ageGap")

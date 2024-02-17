@@ -51,9 +51,9 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     df_prot_train_tissue = pd.DataFrame(tmp, index=df_prot_train_tissue.index, columns=df_prot_train_tissue.columns)
     
     # save the scaler
-    path = 'gtex/train_no_bs/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
+    path = 'gtex/train_no_bs_2/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
     fn = '/'+train_cohort+'_'+agerange+'_based_'+tissue+'_gene_zscore_scaler.pkl'
-    os.makedirs(path)
+    # os.makedirs(path)
     pickle.dump(scaler, open(path+fn, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
     print("z-scaler is ready...")
 
@@ -103,7 +103,7 @@ def Single_train(df_X_train, df_Y_train, train_cohort, tissue, performance_CUTOF
     lasso.fit(df_X_train, df_Y_train)
     print ("lasso retrained...")
     # SAVE MODEL
-    savefp="gtex/train_no_bs/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_lasso_"+tissue+"_aging_model.pkl"
+    savefp="gtex/train_no_bs_2/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_lasso_"+tissue+"_aging_model.pkl"
     pickle.dump(lasso, open(savefp, 'wb'))
     
     # SAVE coefficients            
@@ -161,8 +161,10 @@ agerange="HC"
 performance_CUTOFF=0.95
 norm="Zprot_perf"+str(int(performance_CUTOFF*100))
 train_cohort="gtexV8"
+   
 
-df_prot_train = pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
+df_prot_train = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/artery_coronary.TRAIN.tsv", sep='\s+').set_index("Name")
+# df_prot_train = pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
 md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid.txt", sep='\s+').set_index("SUBJID")
 # tissue_plist_dict = json.load(open("train/data/tissue_pproteinlist_5k_dict_gtex_tissue_enriched_fc4_stable_assay_proteins_seqid.json"))
 

@@ -156,22 +156,6 @@ class CreateGTExTissueAgeObject:
         dfres["Organ"] = organ
         return dfres
 
-
-    def setup_input_dataframe(self, organ, plist):
-        # sort df_prot to match md_hot and subset to organ-specific proteins
-        df_prot_organ = self.df_prot_norm.loc[self.md_hot.index, plist]
-
-        # zscore expression
-        prot_scaler = self.models_dict[organ]["prot_scaler"]
-        df_prot_organ_z = pd.DataFrame(prot_scaler.transform(df_prot_organ),
-                                       index=df_prot_organ.index,
-                                       columns=df_prot_organ.columns)
-
-        # add sex to create df_input for models
-        df_input = pd.concat([self.md_hot[["SEX"]], df_prot_organ_z], axis=1)
-        return df_input
-
-
     def predict_bootstrap_aggregated_age(self, df_input, organ):
 
         # predict age across all bootstraps
