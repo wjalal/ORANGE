@@ -1,12 +1,12 @@
-from gtex import GTExTissueAgeBootstrap10
+from gtex import GTExTissueAgeBootstrap60003
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 def test_OrganAge():
     print ("Testing on trained model")
-    data = GTExTissueAgeBootstrap10.CreateGTExTissueAgeObject()
-    df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/artery_coronary.TEST.10.tsv", sep='\s+').set_index("Name")
+    data = GTExTissueAgeBootstrap60003.CreateGTExTissueAgeObject()
+    df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/artery_coronary.TEST.60003.tsv", sep='\s+').set_index("Name")
     # df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TEST.tsv", sep='\s+').set_index("Name")
     md_hot = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid.txt", sep='\s+').set_index("SUBJID")
     df_prot.index.names = ['SUBJID']

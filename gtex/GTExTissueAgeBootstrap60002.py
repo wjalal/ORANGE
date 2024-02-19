@@ -10,12 +10,16 @@ import warnings
 class CreateGTExTissueAgeObject:
 
     # init method or constructor
-    def __init__(self
+    def __init__(self,
                 #  path_version_scale_factors='v4_to_v4.1_scale_dict.json',
+                 path_bootstrap_seeds='Bootstrap_and_permutation_500_seed_dict_small.json',
                  ):
 
+        self.data_and_model_paths = {
+                                     "path_bootstrap_seeds": path_bootstrap_seeds,
+                                    }
         self.load_data_and_models()
-        # del self.data_and_model_paths
+        del self.data_and_model_paths
 
 
     def load_data_and_models(self):
@@ -34,6 +38,7 @@ class CreateGTExTissueAgeObject:
         # self.organ_plist_dict2 = organ_plist_dict2
 
         # 500 bootstrapped models
+        bootstrap_seeds = json.load(resources.open_text("gtex", self.data_and_model_paths["path_bootstrap_seeds"]))["BS_Seed"]
         models_dict = {}
 
         # load organ aging models and cognition organ aging models
@@ -48,10 +53,11 @@ class CreateGTExTissueAgeObject:
             # load all models
             for organ in organ_plist_dict:
                 models_dict[organ] = {}
-                models_dict[organ]["aging_model"] = {}
+                models_dict[organ]["aging_models"] = []
+
                 # load protein zscore scaler
                 fn_protein_scaler = 'gtexV8_HC_based_'+organ+'_gene_zscore_scaler.pkl'
-                loaded_model = pickle.loads(resources.read_binary('gtex.train_no_bs_3.data.ml_models.gtexV8.HC.'+norm+'.' + organ, fn_protein_scaler))
+                loaded_model = pickle.loads(resources.read_binary('gtex.train_bs10_60002.data.ml_models.gtexV8.HC.'+norm+'.' + organ, fn_protein_scaler))
                 models_dict[organ]["prot_scaler"] = loaded_model
 
                 # # age gap zscore scaler
@@ -65,9 +71,10 @@ class CreateGTExTissueAgeObject:
                 # models_dict[organ]["age_prediction_lowess"] = loaded_model
 
                 # load all aging models
-                fn_aging_model = 'gtexV8_HC_'+norm+'_lasso_'+organ+'_aging_model.pkl'
-                loaded_model = pickle.loads(resources.read_binary('gtex.train_no_bs_3.data.ml_models.gtexV8.HC.'+norm+'.'+ organ, fn_aging_model))
-                models_dict[organ]["aging_model"] = loaded_model
+                for seed in bootstrap_seeds:
+                    fn_aging_model = 'gtexV8_HC_'+norm+'_lasso_'+organ+'_seed'+str(seed)+'_aging_model.pkl'
+                    loaded_model = pickle.loads(resources.read_binary('gtex.train_bs10_60002.data.ml_models.gtexV8.HC.'+norm+'.'+ organ, fn_aging_model))
+                    models_dict[organ]["aging_models"].append(loaded_model)
 
         # save to object
         self.models_dict = models_dict
@@ -139,10 +146,8 @@ class CreateGTExTissueAgeObject:
     def estimate_one_organ_age(self, organ):
         df_input = pd.concat([self.md_hot[["SEX"]], self.df_prot], axis=1)
         # aaaaaa
-        # predicted_age = self.predict_bootstrap_aggregated_age(df_input, organ)  #aaaaaaaa
-        predicted_ages = []
-        predicted_age = self.models_dict[organ]['aging_model'].predict(df_input.to_numpy())
-        predicted_ages.append (predicted_age)
+        predicted_age = self.predict_bootstrap_aggregated_age(df_input, organ)  #aaaaaaaa
+
         # store results in dataframe
         dfres = self.md_hot.copy()
         dfres["Predicted_Age"] = predicted_age
@@ -151,33 +156,17 @@ class CreateGTExTissueAgeObject:
         dfres["Organ"] = organ
         return dfres
 
+    def predict_bootstrap_aggregated_age(self, df_input, organ):
 
-    def setup_input_dataframe(self, organ, plist):
-        # sort df_prot to match md_hot and subset to organ-specific proteins
-        df_prot_organ = self.df_prot_norm.loc[self.md_hot.index, plist]
+        # predict age across all bootstraps
+        predicted_ages_all_seeds = []
+        for aging_model in self.models_dict[organ]['aging_models']:
+            predicted_ages_seed = aging_model.predict(df_input.to_numpy())
+            predicted_ages_all_seeds.append(predicted_ages_seed)
 
-        # zscore expression
-        prot_scaler = self.models_dict[organ]["prot_scaler"]
-        df_prot_organ_z = pd.DataFrame(prot_scaler.transform(df_prot_organ),
-                                       index=df_prot_organ.index,
-                                       columns=df_prot_organ.columns)
-
-        # add sex to create df_input for models
-        df_input = pd.concat([self.md_hot[["SEX"]], df_prot_organ_z], axis=1)
-        return df_input
-
-
-    # def predict_bootstrap_aggregated_age(self, df_input, organ):
-
-    #     # predict age across all bootstraps
-    #     predicted_ages_all_seeds = []
-    #     for aging_model in self.models_dict[organ]['aging_models']:
-    #         predicted_ages_seed = aging_model.predict(df_input.to_numpy())
-    #         predicted_ages_all_seeds.append(predicted_ages_seed)
-
-    #     # take mean of predicted ages
-    #     predicted_ages = np.mean(predicted_ages_all_seeds, axis=0)
-    #     return predicted_ages
+        # take mean of predicted ages
+        predicted_ages = np.mean(predicted_ages_all_seeds, axis=0)
+        return predicted_ages
 
 
     # def calculate_lowess_yhat_and_agegap(self, dfres, organ):

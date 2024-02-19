@@ -97,10 +97,10 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     
     # LASSO
     print ("starting lasso?... (seed = ", seed, ")")
-    lasso = Lasso(random_state=0, tol=0.01, max_iter=5000)
+    lasso = Lasso(random_state=0, tol=0.01, max_iter=60000)
     alphas = np.logspace(-3, 1, 100)
     tuned_parameters = [{'alpha': alphas}]
-    n_folds=5
+    n_folds=20
     print("initialised lasso params setup... (seed = ", seed, ")")
     clf = GridSearchCV(lasso, tuned_parameters, cv=n_folds, scoring="neg_mean_squared_error", refit=False)
     print("gridSearch done... (seed = ", seed, ")")
@@ -111,7 +111,7 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     best_alpha=Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
     print("Plot nad Pick done... (seed = ", seed, ")")
     # Retrain 
-    lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=5000)
+    lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=60000)
     lasso.fit(X_train_sample, Y_train_sample)
     print ("lasso retrained.. (seed = ", seed, ")")
     # SAVE MODEL

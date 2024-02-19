@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in {1..10}; do
+for i in {60001..60010}; do
     cp train_gtex_all.py train_gtex_multi.py
     cp test_gtex_train.py test_gtex_train_multi.py
     cp gtex/GTExTissueAgeBootstrap.py "gtex/GTExTissueAgeBootstrap$i.py"

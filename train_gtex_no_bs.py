@@ -51,7 +51,7 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     df_prot_train_tissue = pd.DataFrame(tmp, index=df_prot_train_tissue.index, columns=df_prot_train_tissue.columns)
     
     # save the scaler
-    path = 'gtex/train_no_bs_2/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
+    path = 'gtex/train_no_bs_3/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
     fn = '/'+train_cohort+'_'+agerange+'_based_'+tissue+'_gene_zscore_scaler.pkl'
     # os.makedirs(path)
     pickle.dump(scaler, open(path+fn, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
@@ -85,7 +85,7 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
 def Single_train(df_X_train, df_Y_train, train_cohort, tissue, performance_CUTOFF, norm, agerange):
     # LASSO
     print ("starting lasso?...")
-    lasso = Lasso(random_state=0, tol=0.01, max_iter=5000)
+    lasso = Lasso(random_state=0, tol=0.01, max_iter=10000)
     alphas = np.logspace(-3, 1, 100)
     tuned_parameters = [{'alpha': alphas}]
     n_folds=5
@@ -99,11 +99,11 @@ def Single_train(df_X_train, df_Y_train, train_cohort, tissue, performance_CUTOF
     best_alpha=Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
     print("Plot nad Pick done...")
     # Retrain 
-    lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=5000)
+    lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=10000)
     lasso.fit(df_X_train, df_Y_train)
     print ("lasso retrained...")
     # SAVE MODEL
-    savefp="gtex/train_no_bs_2/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_lasso_"+tissue+"_aging_model.pkl"
+    savefp="gtex/train_no_bs_3/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_lasso_"+tissue+"_aging_model.pkl"
     pickle.dump(lasso, open(savefp, 'wb'))
     
     # SAVE coefficients            
@@ -163,7 +163,7 @@ norm="Zprot_perf"+str(int(performance_CUTOFF*100))
 train_cohort="gtexV8"
    
 
-df_prot_train = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/artery_coronary.TRAIN.tsv", sep='\s+').set_index("Name")
+df_prot_train = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/artery_coronary.TRAIN.1.tsv", sep='\s+').set_index("Name")
 # df_prot_train = pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
 md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid.txt", sep='\s+').set_index("SUBJID")
 # tissue_plist_dict = json.load(open("train/data/tissue_pproteinlist_5k_dict_gtex_tissue_enriched_fc4_stable_assay_proteins_seqid.json"))
