@@ -1,4 +1,4 @@
-from src.organage.OrganAge import CreateOrganAgeObject
+from src.og.organage.OrganAge import CreateOrganAgeObject
 import pandas as pd
 
 def test_OrganAge():

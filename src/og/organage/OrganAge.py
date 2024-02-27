@@ -71,6 +71,7 @@ class CreateOrganAgeObject:
                 # age prediction lowess
                 fn_agepred_lowess = 'KADRC_HC_'+norm+'_lasso_' + organ + '_age_prediction_lowess.dill'
                 loaded_model = dill.loads(resources.read_binary('src.og.organage.data.ml_models.KADRC.'+norm+'.' + organ, fn_agepred_lowess))
+                print (loaded_model)
                 models_dict[organ]["age_prediction_lowess"] = loaded_model
 
                 # load all aging models
