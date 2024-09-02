@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in {60001..60010}; do
+for i in 60001; do
     cp train_gtex_all.py train_gtex_multi.py
     cp test_gtex_train.py test_gtex_train_multi.py
     cp gtex/GTExTissueAgeBootstrap.py "gtex/GTExTissueAgeBootstrap$i.py"
@@ -19,7 +19,10 @@ for i in {60001..60010}; do
     touch gtex/train_bs10_$i/data/ml_models/gtexV8/HC/__init__.py
     touch gtex/train_bs10_$i/data/ml_models/gtexV8/HC/Zprot_perf95/__init__.py
     touch gtex/train_bs10_$i/data/ml_models/gtexV8/HC/Zprot_perf95/artery_coronary/__init__.py
-    python3 train_gtex_multi.py
+    python3 train_gtex_multi.py data_with_lower_age.csv
     sed -i "s/train_bs10/train_bs10_$i/" "gtex/GTExTissueAgeBootstrap$i.py"
-    python3 test_gtex_train_multi.py
+    python3 test_gtex_train_multi.py data_with_lower_age.csv --output_path output_lower_age_results.csv
+    python3 train_gtex_multi.py data_with_upper_age.csv
+    sed -i "s/train_bs10/train_bs10_$i/" "gtex/GTExTissueAgeBootstrap$i.py"
+    python3 test_gtex_train_multi.py data_with_upper_age.csv --output_path output_upper_age_results.csv
 done
