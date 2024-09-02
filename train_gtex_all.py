@@ -25,6 +25,8 @@ mkl.set_num_threads(1)
 import multiprocessing as mp
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import make_scorer
 
 def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
                                  seed_list, 
@@ -67,7 +69,8 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
         df_X_train = pd.concat([md_hot_train[["SEX"]], df_prot_train_tissue], axis=1)
     else:
         df_X_train = df_prot_train_tissue.copy()
-    df_Y_train = md_hot_train[["AGE"]].copy()
+    # df_Y_train = md_hot_train[["AGE"]].copy()
+    df_Y_train = md_hot_train[["Age_Lower", "Age_Upper"]].copy()
     
     print (df_X_train)
 
@@ -86,7 +89,16 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     dfcoef=pd.concat(all_coef_dfs, join="outer")
     return dfcoef
   
+def age_range_loss(y_true, y_pred):
+    # Assuming y_true and y_pred are numpy arrays with shape (n_samples, 2)
+    lower_true, upper_true = y_true[:, 0], y_true[:, 1]
+    lower_pred, upper_pred = y_pred[:, 0], y_pred[:, 1]
     
+    mse_lower = mean_squared_error(lower_true, lower_pred)
+    mse_upper = mean_squared_error(upper_true, upper_pred)
+    
+    return mse_lower + mse_upper
+
 def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
               tissue, performance_CUTOFF, norm, agerange, seed):
     
@@ -97,12 +109,14 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     
     # LASSO
     print ("starting lasso?... (seed = ", seed, ")")
-    lasso = Lasso(random_state=0, tol=0.01, max_iter=60000)
+    lasso = Lasso(random_state=0, tol=0.01, max_iter=5000)
     alphas = np.logspace(-3, 1, 100)
     tuned_parameters = [{'alpha': alphas}]
-    n_folds=20
+    n_folds=5
     print("initialised lasso params setup... (seed = ", seed, ")")
-    clf = GridSearchCV(lasso, tuned_parameters, cv=n_folds, scoring="neg_mean_squared_error", refit=False)
+    scoring = make_scorer(lambda y_true, y_pred: age_range_loss(y_true, y_pred), greater_is_better=False)
+    clf = GridSearchCV(lasso, tuned_parameters, cv=n_folds, scoring=scoring, refit=False)
+    # clf = GridSearchCV(lasso, tuned_parameters, cv=n_folds, scoring="neg_mean_squared_error", refit=False)
     print("gridSearch done... (seed = ", seed, ")")
     clf.fit(X_train_sample, Y_train_sample)
     print("gridSearch fitting done... (seed = ", seed, ")")
@@ -111,7 +125,7 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     best_alpha=Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
     print("Plot nad Pick done... (seed = ", seed, ")")
     # Retrain 
-    lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=60000)
+    lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=5000)
     lasso.fit(X_train_sample, Y_train_sample)
     print ("lasso retrained.. (seed = ", seed, ")")
     # SAVE MODEL
@@ -167,7 +181,15 @@ def Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=True):
 def NormalizeData(data):
     return (data - np.min(data)) / (np.max(data) - np.min(data))
     
-
+def preprocess_age_column(df):
+    df['AGE'] = df['AGE'].astype(str)
+    age_split = df['AGE'].str.split('-', expand=True)
+    if age_split.shape[1] == 1:
+        age_split[1] = None
+    df['Age_Lower'] = pd.to_numeric(age_split[0], errors='coerce')
+    df['Age_Upper'] = pd.to_numeric(age_split[1], errors='coerce')
+    return df
+    
 
 agerange="HC"
 performance_CUTOFF=0.95
@@ -178,8 +200,13 @@ def df_prot_train (tissue):
     return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/"+tissue+".TRAIN.tsv", sep='\s+').set_index("Name")
     # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
 
+md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS.txt", sep='\s+').set_index("SUBJID")
+# Process the 'AGE' column
+md_hot_train = preprocess_age_column(md_hot_train)
 
-md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid.txt", sep='\s+').set_index("SUBJID")
+# Save the modified DataFrame to a new file
+md_hot_train.to_csv("modified_md_hot_train.csv")
+
 # tissue_plist_dict = json.load(open("train/data/tissue_pproteinlist_5k_dict_gtex_tissue_enriched_fc4_stable_assay_proteins_seqid.json"))
 bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_small.json"))
 

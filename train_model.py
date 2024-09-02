@@ -51,7 +51,7 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
             df_prot_train_tissue = pd.DataFrame(tmp, index=df_prot_train_tissue.index, columns=df_prot_train_tissue.columns)
             
             # save the scaler
-            path = 'train/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
+            path = 'src/train/organage/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
             fn = '/'+train_cohort+'_'+agerange+'_based_'+tissue+'_protein_zscore_scaler.pkl'
             os.makedirs(path)
             pickle.dump(scaler, open(path+fn, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
@@ -157,8 +157,8 @@ train_cohort="KADRC"
 
 md_hot_train = pd.read_csv("tests/md_hot.csv").set_index("ID")
 df_prot_train = pd.read_csv("tests/df_prot.csv").set_index("ID")
-tissue_plist_dict = json.load(open("train/data/tissue_pproteinlist_5k_dict_gtex_tissue_enriched_fc4_stable_assay_proteins_seqid.json"))
-bs_seed_list = json.load(open("train/data/Bootstrap_and_permutation_500_seed_dict.json"))
+tissue_plist_dict = json.load(open("src/train/organage/data/tissue_pproteinlist_5k_dict_gtex_tissue_enriched_fc4_stable_assay_proteins_seqid.json"))
+bs_seed_list = json.load(open("src/train/organage/data/Bootstrap_and_permutation_500_seed_dict.json"))
 
 #95% performance
 start_time = time.time()
