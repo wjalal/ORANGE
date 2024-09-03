@@ -28,4 +28,4 @@ ageGap = toplot.eval("Predicted_Age - AGE").rename("ageGap")
 sns.scatterplot(data=toplot, x="AGE", y="Predicted_Age", 
                 hue=ageGap, palette='coolwarm', hue_norm=(-3,3))                
 # plt.plot(toplot.Age, toplot.yhat_lowess)
-plt.savefig('gtex/train_bs10_7708.png')
+plt.savefig('gtex/logistic_train_bs10_7708.png')
