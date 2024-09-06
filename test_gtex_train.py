@@ -16,16 +16,21 @@ def test_OrganAge():
     # sample metadata data with Age and Sex_F
     data.add_data(md_hot, df_prot)
     # data.normalize(assay_version="v4.1")
+    corr = abs(df_prot.corrwith(md_hot["AGE"])).sort_values(ascending=False)
+    corr = corr[corr >= 0.5]
+    print (corr.size)
+    print(corr)
 
     dfres = data.estimate_organ_ages()
     return dfres
 
 res = test_OrganAge()
 print (res)
+print(res["AGE"].describe())
 toplot = res.loc[res.Organ=="artery_coronary"]
 toplot = toplot.sort_values("Predicted_Age")
 ageGap = toplot.eval("Predicted_Age - AGE").rename("ageGap")
 sns.scatterplot(data=toplot, x="AGE", y="Predicted_Age", 
                 hue=ageGap, palette='coolwarm', hue_norm=(-3,3))                
 # plt.plot(toplot.Age, toplot.yhat_lowess)
-plt.savefig('train_bs10.png')
+plt.savefig('gtex/logistic_RS_fmi_tstScale_train_bs10.png')

@@ -32,7 +32,7 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
                                  norm, agerange, NPOOL=15):
     seed_list = seed_list['BS_Seed']
     NUM_BOOTSTRAP=len(seed_list)
-    print(seed_list)
+    print(NUM_BOOTSTRAP)
     # final lists for output
     all_coef_dfs = []   
     
@@ -49,7 +49,7 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
 
     # zscore
     # scaler = MinMaxScaler(feature_range = (0,1))
-    scaler = StandardScaler()
+    scaler = RobustScaler()
     scaler.fit(df_prot_train_tissue)
     tmp = scaler.transform(df_prot_train_tissue)
     df_prot_train_tissue = pd.DataFrame(tmp, index=df_prot_train_tissue.index, columns=df_prot_train_tissue.columns)
@@ -60,7 +60,7 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     fn = '/'+train_cohort+'_'+agerange+'_based_'+tissue+'_gene_zscore_scaler.pkl'
     # os.makedirs(path)
     pickle.dump(scaler, open(path+fn, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
-    print("z-scaler is ready...")
+    print("gene-tpm z-scaler is ready...")
 
     # add sex 
     if "SEX" in list(md_hot_train.columns):
@@ -81,10 +81,10 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     pool.close()
     pool.join()
     
-    df_tissue_coef = pd.DataFrame(coef_list, columns=["tissue", "BS_Seed", "C", "y_intercept"]+list(df_X_train.columns))
-    all_coef_dfs.append(df_tissue_coef)
+    # df_tissue_coef = pd.DataFrame(coef_list, columns=["tissue", "BS_Seed", "C", "y_intercept"]+list(df_X_train.columns))
+    # all_coef_dfs.append(df_tissue_coef)
     
-    dfcoef=pd.concat(all_coef_dfs, join="outer")
+    dfcoef=[]
     return dfcoef
   
     
@@ -98,81 +98,80 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     
     # LASSO
     print ("starting lasso?... (seed = ", seed, ")")
-    # lasso = Lasso(random_state=0, tol=0.01, max_iter=5000)
-    logistic = LogisticRegression(penalty='l1', solver='liblinear', random_state=0,tol=0.01, max_iter=5000)
-    # alphas = np.logspace(-3, 1, 100)
-    Cs = 1 / np.logspace(-3, 1, 100)
-    # tuned_parameters = [{'alpha': alphas}]
-    tuned_parameters = [{'C': Cs}]
-    n_folds=4
-    print("initialised lasso params setup... (seed = ", seed, ")")
-    # clf = GridSearchCV(lasso, tuned_parameters, cv=n_folds, scoring="neg_mean_squared_error", refit=False)
-    clf = GridSearchCV(logistic, tuned_parameters, cv=n_folds, scoring="f1_weighted", refit=False)
-
-    print("gridSearch done... (seed = ", seed, ")")
-    clf.fit(X_train_sample, np.ravel(Y_train_sample))
-    print("gridSearch fitting done... (seed = ", seed, ")")
-    gsdf = pd.DataFrame(clf.cv_results_)    
-    print("Plot nad Pick STARTING :(... (seed = ", seed, ")")
-    # best_alpha=Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
-    best_C=Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
-    print("Plot nad Pick done... (seed = ", seed, ")")
-    # Retrain 
-    # lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=5000)
-    logistic = LogisticRegression(penalty='l1', solver='liblinear', C=best_C, random_state=0,tol=0.01, max_iter=5000)
-    # lasso.fit(X_train_sample, Y_train_sample)
+    logistic = LogisticRegression(penalty='l1', solver='liblinear', C=10, random_state=0,tol=0.01, max_iter=5000)
+    # Cs = 1 / np.logspace(-3, 1, 100)
+    # tuned_parameters = [{'C': Cs}]
+    # n_folds=4
+    # print("initialised lasso params setup... (seed = ", seed, ")")
+    # clf = GridSearchCV(logistic, tuned_parameters, cv=n_folds, scoring="f1_micro", refit=False)
+    # print("gridSearch done... (seed = ", seed, ")")
+    # clf.fit(X_train_sample, np.ravel(Y_train_sample))
+    # print("gridSearch fitting done... (seed = ", seed, ")")
+    # gsdf = pd.DataFrame(clf.cv_results_)    
+    # print("Plot and Pick STARTING :(... (seed = ", seed, ")")
+    # best_C=Plot_and_pick_C(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
+    # print("Plot and Pick done... (seed = ", seed, ")")
+    # # Retrain 
+    # logistic = LogisticRegression(penalty='l1', solver='liblinear', C=best_C, random_state=0,tol=0.01, max_iter=5000)
     logistic.fit(X_train_sample, np.ravel(Y_train_sample))
     print ("lasso retrained.. (seed = ", seed, ")")
     # SAVE MODEL
-    savefp="gtex/train_bs10/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_lasso_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
+    savefp="gtex/train_bs10/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_l1logistic_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
     # pickle.dump(lasso, open(savefp, 'wb'))
     pickle.dump(logistic, open(savefp, 'wb'))
     # SAVE coefficients            
     # coef_list = [tissue, seed, best_alpha, lasso.intercept_[0]] + list(lasso.coef_)
-    coef_list = [tissue, seed, best_C, logistic.intercept_[0]] + list(logistic.coef_)
-
+    # coef_list = [tissue, seed, best_C, logistic.intercept_[0]] + list(logistic.coef_)
+    coef_list = []
     return coef_list
     
 
 
-def Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=True):
+def Plot_and_pick_C(gsdf, performance_CUTOFF, plot=True):
     
-    #pick alpha at 90-95% top performance, negative derivative (higher alpha)
+    # Normalize the mean test scores
     gsdf["mean_test_score_norm"] = NormalizeData(gsdf["mean_test_score"])
-    print ("P&P normalised...")
-    gsdf["mean_test_score_norm_minus95"] = gsdf["mean_test_score_norm"]-performance_CUTOFF
-    print ("P&P normalised and cut off...")
+    print("P&P normalized...")
+
+    # Calculate the difference from the performance cutoff
+    gsdf["mean_test_score_norm_minus95"] = gsdf["mean_test_score_norm"] - performance_CUTOFF
+    print("P&P normalized and cutoff applied...")
+
+    # Calculate the absolute difference for easy comparison
     gsdf["mean_test_score_norm_minus95_abs"] = np.abs(gsdf["mean_test_score_norm_minus95"])
-    print ("P&P finding derivative...")
-        #derivative of performance by alpha
-    x=gsdf.param_C.to_numpy()
-    y=gsdf.mean_test_score_norm.to_numpy()
-    dx=0.1
+    print("P&P finding derivative...")
+
+    # Calculate the derivative of the performance with respect to C
+    x = gsdf.param_C.to_numpy()
+    y = gsdf.mean_test_score_norm.to_numpy()
+    dx = 0.1
     gsdf["derivative"] = np.gradient(y, dx)
-    print ("P&P FOUND derivative...")
-    tmp=gsdf.loc[gsdf.derivative<0]
-    if len(tmp)!=0:
-        best_alpha = list(tmp.loc[tmp.mean_test_score_norm_minus95_abs == np.min(tmp.mean_test_score_norm_minus95_abs)].param_C)[0]
+    print("P&P FOUND derivative...")
+
+    # Pick the best C where derivative is negative and closest to the performance cutoff
+    tmp = gsdf.loc[gsdf.derivative < 0]
+    if len(tmp) != 0:
+        best_C = list(tmp.loc[tmp.mean_test_score_norm_minus95_abs == np.min(tmp.mean_test_score_norm_minus95_abs)].param_C)[-1]
     else:
-        print('no alpha with derivative <0')
-        tmp2=gsdf
-        best_alpha = list(tmp2.loc[tmp2.mean_test_score_norm_minus95_abs == np.min(tmp2.mean_test_score_norm_minus95_abs)].param_C)[0]
-        
-    # PLOT
+        print('No C with derivative <0')
+        tmp2 = gsdf
+        best_C = list(tmp2.loc[tmp2.mean_test_score_norm_minus95_abs == np.min(tmp2.mean_test_score_norm_minus95_abs)].param_C)[-1]
+
+    # Plot if required
     if plot:
-        fig,axs=plt.subplots(1,2,figsize=(7,3))
+        fig, axs = plt.subplots(1, 2, figsize=(7, 3))
         sns.scatterplot(data=gsdf, x="param_C", y="mean_test_score_norm", ax=axs[0])
-        sns.scatterplot(data=gsdf.loc[gsdf.param_C==best_alpha], x="param_C", y="mean_test_score_norm", ax=axs[0])
+        sns.scatterplot(data=gsdf.loc[gsdf.param_C == best_C], x="param_C", y="mean_test_score_norm", ax=axs[0])
         sns.scatterplot(data=gsdf, x="param_C", y="mean_test_score_norm", ax=axs[1])
-        sns.scatterplot(data=gsdf.loc[gsdf.param_C==best_alpha], x="param_C", y="mean_test_score_norm", ax=axs[1])
-        axs[0].set_xlim(-0.02,best_alpha+0.1)
-        axs[0].set_ylim(0.8,1.05)
+        sns.scatterplot(data=gsdf.loc[gsdf.param_C == best_C], x="param_C", y="mean_test_score_norm", ax=axs[1])
+        axs[0].set_xlim(-0.02, best_C + 0.1)
+        axs[0].set_ylim(0.8, 1.05)
         axs[0].axvline(0.008)
         axs[0].axhline(performance_CUTOFF)
         plt.tight_layout()
         plt.show()
-    return best_alpha
-    
+
+    return best_C
     
 def NormalizeData(data):
     return (data - np.min(data)) / (np.max(data) - np.min(data))
@@ -191,7 +190,8 @@ def df_prot_train (tissue):
 
 md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid_int.txt", sep='\s+').set_index("SUBJID")
 # tissue_plist_dict = json.load(open("train/data/tissue_pproteinlist_5k_dict_gtex_tissue_enriched_fc4_stable_assay_proteins_seqid.json"))
-bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_small.json"))
+# bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_small.json"))
+bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_10.json"))
 
 #95% performance
 start_time = time.time()
@@ -199,7 +199,7 @@ dfcoef = Train_all_tissue_aging_model(md_hot_train, #meta data dataframe with ag
                                        df_prot_train, #protein expression dataframe returning method (by tissue)
                                        bs_seed_list, #bootstrap seeds
                                        performance_CUTOFF=performance_CUTOFF, #heuristic for model simplification
-                                       NPOOL=15, #parallelize
+                                       NPOOL=30, #parallelize
                                        
                                        train_cohort=train_cohort, #these three variables for file naming
                                        norm=norm, 

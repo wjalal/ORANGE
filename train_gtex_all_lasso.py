@@ -48,8 +48,8 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     md_hot_train = md_hot_train.merge(right = df_prot_train_tissue.index.to_series(), how='inner', left_index=True, right_index=True)
 
     # zscore
-    # scaler = MinMaxScaler(feature_range = (0,1))
-    scaler = StandardScaler()
+    scaler = MinMaxScaler(feature_range = (0,1))
+    # scaler = RobustScaler()
     scaler.fit(df_prot_train_tissue)
     tmp = scaler.transform(df_prot_train_tissue)
     df_prot_train_tissue = pd.DataFrame(tmp, index=df_prot_train_tissue.index, columns=df_prot_train_tissue.columns)
@@ -81,10 +81,10 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     pool.close()
     pool.join()
     
-    df_tissue_coef = pd.DataFrame(coef_list, columns=["tissue", "BS_Seed", "alpha", "y_intercept"]+list(df_X_train.columns))
-    all_coef_dfs.append(df_tissue_coef)
+    # df_tissue_coef = pd.DataFrame(coef_list, columns=["tissue", "BS_Seed", "alpha", "y_intercept"]+list(df_X_train.columns))
+    # all_coef_dfs.append(df_tissue_coef)
     
-    dfcoef=pd.concat(all_coef_dfs, join="outer")
+    dfcoef=[]
     return dfcoef
   
     
@@ -99,15 +99,11 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     # LASSO
     print ("starting lasso?... (seed = ", seed, ")")
     lasso = Lasso(random_state=0, tol=0.01, max_iter=5000)
-    # logistic = LogisticRegression(penalty='l1', solver='liblinear', random_state=0,tol=0.01, max_iter=5000)
     alphas = np.logspace(-3, 1, 100)
-    # Cs = 1 / np.logspace(-3, 1, 100)
     tuned_parameters = [{'alpha': alphas}]
-    # tuned_parameters = [{'C': Cs}]
     n_folds=4
     print("initialised lasso params setup... (seed = ", seed, ")")
     clf = GridSearchCV(lasso, tuned_parameters, cv=n_folds, scoring="neg_mean_squared_error", refit=False)
-    # clf = GridSearchCV(logistic, tuned_parameters, cv=n_folds, scoring="f1_weighted", refit=False)
 
     print("gridSearch done... (seed = ", seed, ")")
     clf.fit(X_train_sample, Y_train_sample)
@@ -115,21 +111,16 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     gsdf = pd.DataFrame(clf.cv_results_)    
     print("Plot nad Pick STARTING :(... (seed = ", seed, ")")
     best_alpha=Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
-    # best_C=Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=True)   #pick best alpha
     print("Plot nad Pick done... (seed = ", seed, ")")
     # Retrain 
     lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=5000)
-    # logistic = LogisticRegression(penalty='l1', solver='liblinear', C=best_C, random_state=0,tol=0.01, max_iter=5000)
     lasso.fit(X_train_sample, Y_train_sample)
-    # logistic.fit(X_train_sample, Y_train_sample)
     print ("lasso retrained.. (seed = ", seed, ")")
     # SAVE MODEL
-    savefp="gtex/train_bs10/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_lasso_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
-    # pickle.dump(lasso, open(savefp, 'wb'))
+    savefp="gtex/train_bs10/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_l1logistic_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
     pickle.dump(lasso, open(savefp, 'wb'))
     # SAVE coefficients            
-    # coef_list = [tissue, seed, best_alpha, lasso.intercept_[0]] + list(lasso.coef_)
-    coef_list = [tissue, seed, best_alpha, lasso.intercept_[0]] + list(lasso.coef_)
+    coef_list = []
 
     return coef_list
     
@@ -191,7 +182,7 @@ def df_prot_train (tissue):
 
 md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid_int.txt", sep='\s+').set_index("SUBJID")
 # tissue_plist_dict = json.load(open("train/data/tissue_pproteinlist_5k_dict_gtex_tissue_enriched_fc4_stable_assay_proteins_seqid.json"))
-bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_small.json"))
+bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_10.json"))
 
 #95% performance
 start_time = time.time()
