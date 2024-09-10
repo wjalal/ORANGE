@@ -1,8 +1,10 @@
 import pandas as pd
+import warnings
 import numpy as np
+np.warnings = warnings
 from sklearn import preprocessing
 from scipy import stats
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, PowerTransformer
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
@@ -15,7 +17,6 @@ import time
 import random 
 import os
 from adjustText import adjust_text
-
 # %matplotlib inline
 
 
@@ -46,10 +47,12 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
     df_prot_train_tissue = df_prot_train (tissue)
     df_prot_train_tissue.index.names = ['SUBJID']
     md_hot_train = md_hot_train.merge(right = df_prot_train_tissue.index.to_series(), how='inner', left_index=True, right_index=True)
-
+    print(df_prot_train_tissue)
     # zscore
     # scaler = MinMaxScaler(feature_range = (0,1))
-    scaler = RobustScaler()
+    # scaler = RobustScaler()
+    print (np.isinf(df_prot_train_tissue).any().any())
+    scaler = PowerTransformer(method='yeo-johnson')
     scaler.fit(df_prot_train_tissue)
     tmp = scaler.transform(df_prot_train_tissue)
     df_prot_train_tissue = pd.DataFrame(tmp, index=df_prot_train_tissue.index, columns=df_prot_train_tissue.columns)
@@ -98,30 +101,28 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     
     # LASSO
     print ("starting lasso?... (seed = ", seed, ")")
-    logistic = LogisticRegression(penalty='l1', solver='liblinear', C=10, random_state=0,tol=0.01, max_iter=5000)
-    # Cs = 1 / np.logspace(-3, 1, 100)
-    # tuned_parameters = [{'C': Cs}]
-    # n_folds=4
-    # print("initialised lasso params setup... (seed = ", seed, ")")
-    # clf = GridSearchCV(logistic, tuned_parameters, cv=n_folds, scoring="f1_micro", refit=False)
-    # print("gridSearch done... (seed = ", seed, ")")
-    # clf.fit(X_train_sample, np.ravel(Y_train_sample))
-    # print("gridSearch fitting done... (seed = ", seed, ")")
-    # gsdf = pd.DataFrame(clf.cv_results_)    
-    # print("Plot and Pick STARTING :(... (seed = ", seed, ")")
-    # best_C=Plot_and_pick_C(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
-    # print("Plot and Pick done... (seed = ", seed, ")")
-    # # Retrain 
-    # logistic = LogisticRegression(penalty='l1', solver='liblinear', C=best_C, random_state=0,tol=0.01, max_iter=5000)
+    # logistic = LogisticRegression(penalty='l1', solver='liblinear', C=10, random_state=0,tol=0.01, max_iter=5000)
+    logistic = LogisticRegression(penalty='l1', solver='liblinear', random_state=0,tol=0.01, max_iter=5000)
+    Cs = 1 / np.logspace(-3, 1, 100)
+    tuned_parameters = [{'C': Cs}]
+    n_folds=4
+    print("initialised lasso params setup... (seed = ", seed, ")")
+    clf = GridSearchCV(logistic, tuned_parameters, cv=n_folds, scoring="accuracy", refit=False)
+    print("gridSearch done... (seed = ", seed, ")")
+    clf.fit(X_train_sample, np.ravel(Y_train_sample))
+    print("gridSearch fitting done... (seed = ", seed, ")")
+    gsdf = pd.DataFrame(clf.cv_results_)    
+    print("Plot and Pick STARTING :(... (seed = ", seed, ")")
+    best_C=Plot_and_pick_C(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
+    print("Plot and Pick done... (seed = ", seed, ")")
+    # Retrain 
+    logistic = LogisticRegression(penalty='l1', solver='liblinear', C=best_C, random_state=0,tol=0.01, max_iter=5000)
     logistic.fit(X_train_sample, np.ravel(Y_train_sample))
     print ("lasso retrained.. (seed = ", seed, ")")
     # SAVE MODEL
     savefp="gtex/train_bs10/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_l1logistic_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
     # pickle.dump(lasso, open(savefp, 'wb'))
     pickle.dump(logistic, open(savefp, 'wb'))
-    # SAVE coefficients            
-    # coef_list = [tissue, seed, best_alpha, lasso.intercept_[0]] + list(lasso.coef_)
-    # coef_list = [tissue, seed, best_C, logistic.intercept_[0]] + list(logistic.coef_)
     coef_list = []
     return coef_list
     

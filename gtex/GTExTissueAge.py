@@ -10,15 +10,16 @@ import warnings
 class CreateGTExTissueAgeObject:
 
     # init method or constructor
-    def __init__(self
+    def __init__(self,
+                 organ
                 #  path_version_scale_factors='v4_to_v4.1_scale_dict.json',
                  ):
 
-        self.load_data_and_models()
+        self.load_data_and_models(organ)
         # del self.data_and_model_paths
 
 
-    def load_data_and_models(self):
+    def load_data_and_models(self, organ):
 
         # Seqid:scale_factor dictionary
         # version_scale_factors = json.load(resources.open_text("gtex", self.data_and_model_paths["path_version_scale_factors"]))
@@ -27,7 +28,6 @@ class CreateGTExTissueAgeObject:
         # # organ:proteinlist dictionary
         # organ_plist_dict1 = json.load(resources.open_text("train.data",
         #                                                  self.data_and_model_paths["path_organ_plist_dict1"]))
-        organ_plist_dict1 = ['artery_coronary']
         # organ_plist_dict2 = json.load(resources.open_text("train.data",
         #                                                       self.data_and_model_paths["path_organ_plist_dict2"]))
         # self.organ_plist_dict1 = organ_plist_dict1
@@ -38,42 +38,37 @@ class CreateGTExTissueAgeObject:
 
         # load organ aging models and cognition organ aging models
         model_norms = ["Zprot_perf95"]
-        plist_dicts = [organ_plist_dict1]
 
         for i in range(len(model_norms)):
 
             norm = model_norms[i]
-            organ_plist_dict = plist_dicts[i]
 
             # load all models
-            for organ in organ_plist_dict:
-                models_dict[organ] = {}
-                models_dict[organ]["aging_model"] = {}
-                # load protein zscore scaler
-                fn_protein_scaler = 'gtexV8_HC_based_'+organ+'_gene_zscore_scaler.pkl'
-                loaded_model = pickle.loads(resources.read_binary('gtex.train_no_bs.data.ml_models.gtexV8.HC.'+norm+'.' + organ, fn_protein_scaler))
-                models_dict[organ]["prot_scaler"] = loaded_model
+            models_dict[organ] = {}
+            models_dict[organ]["aging_model"] = {}
+            # load protein zscore scaler
+            fn_protein_scaler = 'gtexV8_HC_based_'+organ+'_gene_zscore_scaler.pkl'
+            loaded_model = pickle.loads(resources.read_binary('gtex.train_no_bs.data.ml_models.gtexV8.HC.'+norm+'.' + organ, fn_protein_scaler))
+            models_dict[organ]["prot_scaler"] = loaded_model
 
-                # # age gap zscore scaler
-                # fn_agegap_scaler = 'KADRC_HC_'+norm+'_lasso_'+organ+'_agegap_zscore_scaler.pkl'
-                # loaded_model = pickle.loads(resources.read_binary('organage.data.ml_models.KADRC.'+norm+'.' + organ, fn_agegap_scaler))
-                # models_dict[organ]["agegap_scaler"] = loaded_model
+            # # age gap zscore scaler
+            # fn_agegap_scaler = 'KADRC_HC_'+norm+'_lasso_'+organ+'_agegap_zscore_scaler.pkl'
+            # loaded_model = pickle.loads(resources.read_binary('organage.data.ml_models.KADRC.'+norm+'.' + organ, fn_agegap_scaler))
+            # models_dict[organ]["agegap_scaler"] = loaded_model
 
-                # # age prediction lowess
-                # fn_agepred_lowess = 'KADRC_HC_'+norm+'_lasso_' + organ + '_age_prediction_lowess.dill'
-                # loaded_model = dill.loads(resources.read_binary('organage.data.ml_models.KADRC.'+norm+'.' + organ, fn_agepred_lowess))
-                # models_dict[organ]["age_prediction_lowess"] = loaded_model
+            # # age prediction lowess
+            # fn_agepred_lowess = 'KADRC_HC_'+norm+'_lasso_' + organ + '_age_prediction_lowess.dill'
+            # loaded_model = dill.loads(resources.read_binary('organage.data.ml_models.KADRC.'+norm+'.' + organ, fn_agepred_lowess))
+            # models_dict[organ]["age_prediction_lowess"] = loaded_model
 
-                # load all aging models
-                fn_aging_model = 'gtexV8_HC_'+norm+'_lasso_'+organ+'_aging_model.pkl'
-                loaded_model = pickle.loads(resources.read_binary('gtex.train_no_bs.data.ml_models.gtexV8.HC.'+norm+'.'+ organ, fn_aging_model))
-                models_dict[organ]["aging_model"] = loaded_model
+            # load all aging models
+            fn_aging_model = 'gtexV8_HC_'+norm+'_lasso_'+organ+'_aging_model.pkl'
+            loaded_model = pickle.loads(resources.read_binary('gtex.train_no_bs.data.ml_models.gtexV8.HC.'+norm+'.'+ organ, fn_aging_model))
+            models_dict[organ]["aging_model"] = loaded_model
 
         # save to object
         self.models_dict = models_dict
 
-        organ_plist_dict = organ_plist_dict1.copy()
-        self.organ_plist_dict = organ_plist_dict
         # del self.organ_plist_dict1
 
 
@@ -148,7 +143,6 @@ class CreateGTExTissueAgeObject:
         dfres["Predicted_Age"] = predicted_age
         # dfres = self.calculate_lowess_yhat_and_agegap(dfres, organ)
         # dfres = self.zscore_agegaps(dfres, organ)
-        dfres["Organ"] = organ
         return dfres
 
 

@@ -5,6 +5,8 @@ import dill
 import pandas as pd
 import numpy as np
 import warnings
+import statsmodels.api as sm
+from scipy.interpolate import interp1d
 
 # Class for GTExTissueAge
 class CreateGTExTissueAgeObject:
@@ -149,13 +151,16 @@ class CreateGTExTissueAgeObject:
                                 index=self.df_prot.index,
                                 columns=self.df_prot.columns)
         df_input = pd.concat([self.md_hot[["SEX"]], df_prot_z], axis=1)
+        print (df_input)
         # aaaaaa
         predicted_age = self.predict_bootstrap_aggregated_age(df_input, organ)  #aaaaaaaa
 
         # store results in dataframe
         dfres = self.md_hot.copy()
         dfres["Predicted_Age"] = predicted_age
-        # dfres = self.calculate_lowess_yhat_and_agegap(dfres, organ)
+        # dfres = pd.concat([self.md_hot[["AGE"]], dfres], axis=1)
+        # print(dfres)
+        dfres = self.calculate_lowess_yhat_and_agegap(dfres, organ)
         # dfres = self.zscore_agegaps(dfres, organ)
         dfres["Organ"] = organ
         return dfres
@@ -173,19 +178,25 @@ class CreateGTExTissueAgeObject:
         return predicted_ages
 
 
-    # def calculate_lowess_yhat_and_agegap(self, dfres, organ):
-    #     dfres_agegap = dfres.copy()
+    def calculate_lowess_yhat_and_agegap(self, dfres, organ):
+        dfres_agegap = dfres.copy()
 
-    #     # calculate agegap using lowess of predicted vs chronological age from training cohort
-    #     age_prediction_lowess = self.models_dict[organ]['age_prediction_lowess']
-    #     dfres_agegap["yhat_lowess"] = age_prediction_lowess(np.array(dfres_agegap.Age))
+        # calculate agegap using lowess of predicted vs chronological age from training cohort
+        # age_prediction_lowess = self.models_dict[organ]['age_prediction_lowess']
+        lowess = sm.nonparametric.lowess
+        lowess_fit = lowess(dfres_agegap.Predicted_Age.to_numpy(), dfres_agegap.AGE.to_numpy(), frac=2/3, it=5)
+        lowess_fit_int = interp1d(lowess_fit[:,0], lowess_fit[:,1], bounds_error=False, kind='linear', fill_value='extrapolate') 
+        y_lowess = lowess_fit_int(dfres_agegap.AGE)
+        dfres_agegap["yhat_lowess"] = y_lowess
 
-    #     if len(dfres_agegap.loc[dfres_agegap.yhat_lowess.isna()]) > 0:
-    #         print("Could not predict lowess yhat in " + str(len(dfres_agegap.loc[dfres_agegap.yhat_lowess.isna()])) + " samples")
-    #         dfres_agegap = dfres_agegap.dropna(subset="yhat_lowess")
+        # dfres_agegap["yhat_lowess"] = age_prediction_lowess(np.array(dfres_agegap.Age))
 
-    #     dfres_agegap["AgeGap"] = dfres_agegap["Predicted_Age"] - dfres_agegap["yhat_lowess"]
-    #     return dfres_agegap
+        if len(dfres_agegap.loc[dfres_agegap.yhat_lowess.isna()]) > 0:
+            print("Could not predict lowess yhat in " + str(len(dfres_agegap.loc[dfres_agegap.yhat_lowess.isna()])) + " samples")
+            dfres_agegap = dfres_agegap.dropna(subset="yhat_lowess")
+
+        dfres_agegap["AgeGap"] = dfres_agegap["Predicted_Age"] - dfres_agegap["yhat_lowess"]
+        return dfres_agegap
 
 
     # def zscore_agegaps(self, dfres, organ):
