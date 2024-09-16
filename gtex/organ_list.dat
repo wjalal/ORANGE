@@ -1,5 +1,3 @@
-colon_transverse
-colon_sigmoid
 liver
 artery_aorta
 lung
@@ -10,4 +8,12 @@ brain_cerebellum
 adrenal_gland
 stomach
 heart_atrial_appendage
-heart_left_ventricle
+colon_transverse
+colon_sigmoid
+pituitary
+kidney_cortex
+pancreas
+thyroid
+adipose_subcutaneous
+nerve_tibial
+brain_caudate_basal_ganglia

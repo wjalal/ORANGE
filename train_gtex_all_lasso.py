@@ -27,25 +27,26 @@ from sklearn.linear_model import Lasso, LogisticRegression
 from sklearn.model_selection import GridSearchCV
 
 gene_sort_crit = sys.argv[1]
+n_bs = sys.argv[2]
+split_id = sys.argv[3]
 if gene_sort_crit != '20p' and gene_sort_crit != '1000':
-    print ("Invalid args")
+    print ("Invalid gene sort criteria")
     exit (1)
-    
+if int(n_bs) > 500:
+    print ("n_bs > 500 not possible")
+    exit (1)
 
 def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
                                  seed_list, 
                                  performance_CUTOFF, train_cohort,
                                  norm, agerange, NPOOL=15):
+    NUM_BOOTSTRAP = int(n_bs)
     seed_list = seed_list['BS_Seed']
-    NUM_BOOTSTRAP=len(seed_list)
+    seed_list = seed_list[:NUM_BOOTSTRAP]
     print(seed_list)
     # final lists for output
     all_coef_dfs = []   
     
-    # bootstrap clocks for each tissue
-    # for tissue,plist in tissue_plist_dict.items():
-    #     if len(plist)>0:            
-    #         print(tissue) 
     with open('gtex/organ_list.dat', 'r') as file:
         tissues = [line.strip() for line in file]
 
@@ -63,13 +64,13 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
         scaler.fit(df_prot_train_tissue)
         tmp = scaler.transform(df_prot_train_tissue)
         df_prot_train_tissue = pd.DataFrame(tmp, index=df_prot_train_tissue.index, columns=df_prot_train_tissue.columns)
-        print(df_prot_train_tissue)
+        print (df_prot_train_tissue)
 
         # save the scaler
-        path = 'gtex/train_bs10/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
+        path = 'gtex/train_splits/train_bs' + n_bs + '_' + split_id + '/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
         fn = '/'+train_cohort+'_'+agerange+'_based_'+tissue+'_gene_zscore_scaler.pkl'
-        # os.makedirs(path)
-        pickle.dump(scaler, open(path+fn, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+        os.makedirs (path, exist_ok=True)
+        pickle.dump (scaler, open(path+fn, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
         print("z-scaler is ready...")
 
         # add sex 
@@ -90,9 +91,6 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
         coef_list = pool.starmap(Bootstrap_train, input_list)
         pool.close()
         pool.join()
-        
-        # df_tissue_coef = pd.DataFrame(coef_list, columns=["tissue", "BS_Seed", "alpha", "y_intercept"]+list(df_X_train.columns))
-        # all_coef_dfs.append(df_tissue_coef)
         
     dfcoef=[]
     return dfcoef
@@ -128,7 +126,7 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     lasso.fit(X_train_sample, Y_train_sample)
     print ("lasso retrained.. (seed = ", seed, ")")
     # SAVE MODEL
-    savefp="gtex/train_bs10/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_l1logistic_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
+    savefp="gtex/train_splits/train_bs" + n_bs + "_" + split_id + "/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_l1logistic_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
     pickle.dump(lasso, open(savefp, 'wb'))
     # SAVE coefficients            
     coef_list = []
@@ -187,13 +185,12 @@ norm="Zprot_perf"+str(int(performance_CUTOFF*100))
 train_cohort="gtexV8"
 
 def df_prot_train (tissue):
-    return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN.tsv", sep='\s+').set_index("Name")
+    return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
     # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
 
 
 md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid_int.txt", sep='\s+').set_index("SUBJID")
-# tissue_plist_dict = json.load(open("train/data/tissue_pproteinlist_5k_dict_gtex_tissue_enriched_fc4_stable_assay_proteins_seqid.json"))
-bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_10.json"))
+bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_500.json"))
 
 #95% performance
 start_time = time.time()

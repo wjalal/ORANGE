@@ -1,0 +1,5 @@
+clsp23101: 80-20 normel
+clsp23002-10: 70-30 normel
+clsp23301-20: 80 : (20 + dthhrdy(1))
+
+clsp23401 : 80 : (20 + dthhrdy(1)) | logistic
