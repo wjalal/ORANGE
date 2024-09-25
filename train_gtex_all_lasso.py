@@ -23,23 +23,14 @@ import mkl
 mkl.set_num_threads(1)
 
 import multiprocessing as mp
-from sklearn.linear_model import Lasso, LogisticRegression
+from sklearn.linear_model import Lasso, LogisticRegression, Ridge
 from sklearn.model_selection import GridSearchCV
 
-gene_sort_crit = sys.argv[1]
-n_bs = sys.argv[2]
-split_id = sys.argv[3]
-if gene_sort_crit != '20p' and gene_sort_crit != '1000':
-    print ("Invalid gene sort criteria")
-    exit (1)
-if int(n_bs) > 500:
-    print ("n_bs > 500 not possible")
-    exit (1)
 
-def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
+def Train_all_tissue_aging_model_lasso(md_hot_train, df_prot_train,
                                  seed_list, 
                                  performance_CUTOFF, train_cohort,
-                                 norm, agerange, NPOOL=15):
+                                 norm, agerange, n_bs, split_id, NPOOL=15):
     NUM_BOOTSTRAP = int(n_bs)
     seed_list = seed_list['BS_Seed']
     seed_list = seed_list[:NUM_BOOTSTRAP]
@@ -87,7 +78,7 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
         print ("starting bootstrap training...")
         pool = mp.Pool(NPOOL)
         input_list = [([df_X_train, df_Y_train, train_cohort,
-                        tissue, performance_CUTOFF, norm, agerange] + [seed_list[i]]) for i in range(NUM_BOOTSTRAP)]        
+                        tissue, performance_CUTOFF, norm, agerange, n_bs, split_id] + [seed_list[i]]) for i in range(NUM_BOOTSTRAP)]        
         coef_list = pool.starmap(Bootstrap_train, input_list)
         pool.close()
         pool.join()
@@ -97,7 +88,7 @@ def Train_all_tissue_aging_model(md_hot_train, df_prot_train,
   
     
 def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
-              tissue, performance_CUTOFF, norm, agerange, seed):
+              tissue, performance_CUTOFF, norm, agerange, n_bs, split_id, seed):
     
     #setup
     X_train_sample = df_X_train.sample(frac=1, replace=True, random_state=seed).to_numpy()
@@ -126,7 +117,7 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     lasso.fit(X_train_sample, Y_train_sample)
     print ("lasso retrained.. (seed = ", seed, ")")
     # SAVE MODEL
-    savefp="gtex/train_splits/train_bs" + n_bs + "_" + split_id + "/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_l1logistic_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
+    savefp="gtex/train_splits/train_bs" + n_bs + "_" + split_id + "/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_lasso_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
     pickle.dump(lasso, open(savefp, 'wb'))
     # SAVE coefficients            
     coef_list = []
@@ -178,30 +169,42 @@ def NormalizeData(data):
     return (data - np.min(data)) / (np.max(data) - np.min(data))
     
 
+if __name__ == "__main__":
+    agerange="HC"
+    performance_CUTOFF=0.95
+    norm="Zprot_perf"+str(int(performance_CUTOFF*100))
+    train_cohort="gtexV8"
 
-agerange="HC"
-performance_CUTOFF=0.95
-norm="Zprot_perf"+str(int(performance_CUTOFF*100))
-train_cohort="gtexV8"
+    gene_sort_crit = sys.argv[1]
+    n_bs = sys.argv[2]
+    split_id = sys.argv[3]
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000':
+        print ("Invalid gene sort criteria")
+        exit (1)
+    if int(n_bs) > 500:
+        print ("n_bs > 500 not possible")
+        exit (1)
 
-def df_prot_train (tissue):
-    return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
-    # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
+    def df_prot_train (tissue):
+        return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
+        # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
 
+    from md_age_ordering import return_md_hot
+    md_hot_train = return_md_hot()
+    
+    bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_500.json"))
 
-md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid_int.txt", sep='\s+').set_index("SUBJID")
-bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_500.json"))
-
-#95% performance
-start_time = time.time()
-dfcoef = Train_all_tissue_aging_model(md_hot_train, #meta data dataframe with age and sex (binary) as columns
-                                       df_prot_train, #protein expression dataframe returning method (by tissue)
-                                       bs_seed_list, #bootstrap seeds
-                                       performance_CUTOFF=performance_CUTOFF, #heuristic for model simplification
-                                       NPOOL=15, #parallelize
-                                       
-                                       train_cohort=train_cohort, #these three variables for file naming
-                                       norm=norm, 
-                                       agerange=agerange, 
-                                       )
-print((time.time() - start_time)/60)
+    #95% performance
+    start_time = time.time()
+    dfcoef = Train_all_tissue_aging_model_lasso(md_hot_train, #meta data dataframe with age and sex (binary) as columns
+                                        df_prot_train, #protein expression dataframe returning method (by tissue)
+                                        bs_seed_list, #bootstrap seeds
+                                        performance_CUTOFF=performance_CUTOFF, #heuristic for model simplification
+                                        NPOOL=15, #parallelize
+                                        train_cohort=train_cohort, #these three variables for file naming
+                                        norm=norm, 
+                                        agerange=agerange, 
+                                        n_bs=n_bs,
+                                        split_id=split_id
+                                        )
+    print((time.time() - start_time)/60)

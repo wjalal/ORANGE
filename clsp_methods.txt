@@ -1,5 +1,12 @@
-clsp23101: 80-20 normel
-clsp23002-10: 70-30 normel
-clsp23301-20: 80 : (20 + dthhrdy(1))
+clsp23101:     80-20 normel | lasso
+clsp23002-10:  70-30 normel | lasso
+cl1sp23301-20: 80:(20 + dthhrdy(1)) | lasso
 
-clsp23401 : 80 : (20 + dthhrdy(1)) | logistic
+cl1sp23401 :     80:(20 + dthhrdy(1)) | logistic
+cl1sp201001-14 : 80:(20 + dthhrdy(1)) | ridge
+cl1sp202001-05 : 80:(20 + dthhrdy(1)) | elasticnet
+cl1sp202101-15 : 80:(20 + dthhrdy(1)) | randomforest
+cl1sp202301-05 : 80:(20 + dthhrdy(1)) | lasso + ridge + elasticnet + randomforest
+
+
+cl1sp203001-? : true-age ordering

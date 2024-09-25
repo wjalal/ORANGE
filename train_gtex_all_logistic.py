@@ -193,8 +193,9 @@ def df_prot_train (tissue):
     return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
     # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
 
+from md_age_ordering import return_md_hot
+md_hot_train = return_md_hot()
 
-md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid_int.txt", sep='\s+').set_index("SUBJID")
 bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_500.json"))
 
 #95% performance

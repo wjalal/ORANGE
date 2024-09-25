@@ -116,6 +116,12 @@ def agegap_dist_analytics (df, cols, gene_sort_crit, n_bs, split_id, regr, plot)
             # plt.show()
             if regr == "lasso":
                 plt.savefig("gtex_outputs/analytics_lasso_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + col + ".png")
+            elif regr == "ridge":
+                plt.savefig("gtex_outputs/analytics_ridge_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + col + ".png")
+            elif regr == "elasticnet":
+                plt.savefig("gtex_outputs/analytics_elasticnet_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + col + ".png")
+            elif regr == "randomforest":
+                plt.savefig("gtex_outputs/analytics_randomforest_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + col + ".png")
             elif regr == "logistic":
                 plt.savefig("gtex_outputs/analytics_logistic_PTyj_f1ma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + col + ".png")
             plt.clf()

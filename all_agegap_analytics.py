@@ -27,8 +27,14 @@ if int(n_bs) > 500:
 
 if regr == "lasso":
     all_tissue_res = pd.read_csv(filepath_or_buffer="gtex_outputs/lasso_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\s+').set_index("SUBJID")
+elif regr == "ridge":
+    all_tissue_res = pd.read_csv(filepath_or_buffer="gtex_outputs/ridge_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\s+').set_index("SUBJID")
+elif regr == "elasticnet":
+    all_tissue_res = pd.read_csv(filepath_or_buffer="gtex_outputs/elasticnet_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\s+').set_index("SUBJID")
 elif regr == "logistic":
     all_tissue_res = pd.read_csv(filepath_or_buffer="gtex_outputs/logistic_PTyj_f1ma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\s+').set_index("SUBJID")
+elif regr == "randomforest":
+    all_tissue_res = pd.read_csv(filepath_or_buffer="gtex_outputs/randomforest_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\s+').set_index("SUBJID")
 
 # print (all_tissue_res)
 exclude_cols = ['AGE', 'SEX', 'DTHHRDY']

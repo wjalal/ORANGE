@@ -13,6 +13,7 @@ import statsmodels.api as sm
 import seaborn as sns
 from scipy.stats import norm
 from agegap_analytics import *
+from sklearn.metrics import mean_squared_error, r2_score
 
 gene_sort_crit = sys.argv[1]
 n_bs = sys.argv[2]
@@ -58,7 +59,7 @@ class CreateGTExTissueAgeObject:
                 models_dict[organ]["prot_scaler"] = loaded_model
 
             for seed in bootstrap_seeds:
-                fn_aging_model = 'gtexV8_HC_'+norm+'_l1logistic_'+organ+'_seed'+str(seed)+'_aging_model.pkl'
+                fn_aging_model = 'gtexV8_HC_'+norm+'_' + regr + '_'+organ+'_seed'+str(seed)+'_aging_model.pkl'
                 with open('gtex/train_splits/train_bs' + n_bs + '_' + split_id + '/data/ml_models/gtexV8/HC/'+norm+'/'+organ+"/"+fn_aging_model, 'rb') as f_model:
                     loaded_model = pickle.load(f_model)
                     models_dict[organ]["aging_models"].append(loaded_model)
@@ -120,8 +121,8 @@ class CreateGTExTissueAgeObject:
         return dfres_agegap
 
 
-
-md_hot = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid_int.txt", sep='\s+').set_index("SUBJID")
+from md_age_ordering import return_md_hot
+md_hot = return_md_hot()
 all_tissue_res = md_hot.copy()
 
 def test_OrganAge (tissue):
@@ -130,7 +131,7 @@ def test_OrganAge (tissue):
     df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + tissue + ".TEST." + split_id + ".tsv", sep='\s+').set_index("Name")
     df_prot.index.names = ['SUBJID']
     md_hot_tissue = md_hot.merge(right = df_prot.index.to_series(), how='inner', left_index=True, right_index=True)
-    # print(md_hot_tissue)
+    print(md_hot_tissue)
 
     # sample metadata data with Age and Sex_F
     data.add_data(md_hot_tissue, df_prot)
@@ -165,14 +166,27 @@ for tissue in tissues:
     # plt.savefig('gtex/logistic_PTyj_noGS_C10_tstScale_train_bs10.png')
     if regr == "lasso":
         plt.savefig("gtex_outputs/lasso_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + tissue + ".png")
-    elif regr == "logistic":
-        plt.savefig("gtex_outputs/logistic_PTyj_f1ma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + tissue + ".png")
+    elif regr == "ridge":
+        plt.savefig("gtex_outputs/ridge_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + tissue + ".png")
+    elif regr == "elasticnet":
+        plt.savefig("gtex_outputs/elasticnet_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + tissue + ".png")
+    elif regr == "randomforest":
+        plt.savefig("gtex_outputs/randomforest_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + tissue + ".png")
+    elif regr == "l1logistic":
+        plt.savefig("gtex_outputs/l1logistic_PTyj_f1ma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + tissue + ".png")
     plt.clf()
     # all_tissue_res['p_age_' + tissue] = res["Predicted_Age"]
     all_tissue_res['agegap_' + tissue] = res['AgeGap']
     tissue_res = pd.DataFrame(index=res.index)
     tissue_res['agegap_' + tissue] = res['AgeGap']
     tissue_res['DTHHRDY'] = res['DTHHRDY']
+    mse = mean_squared_error(res['AGE'], res['Predicted_Age'])
+    r2 = r2_score(res['AGE'], res['Predicted_Age'])
+    r2_yhat = r2_score(res['AGE'], res['yhat_lowess'])
+    print(f'Mean Squared Error: {mse} = ({mse**0.5})^2')
+    print(f'R-squared: {r2}')
+    print(f'R-squared with y_hat: {r2_yhat}')
+    print() 
 
 exclude_cols = ['AGE', 'SEX', 'DTHHRDY']
 subset_cols = [col for col in all_tissue_res.columns if col not in exclude_cols]
@@ -186,5 +200,11 @@ all_tissue_res = all_tissue_res.drop(columns=['non_null_count'])
 # print (all_tissue_res)
 if regr == "lasso":
     all_tissue_res.to_csv("gtex_outputs/lasso_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\t', index=True)
-elif regr == "logistic":
-    all_tissue_res.to_csv("gtex_outputs/logistic_PTyj_f1ma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\t', index=True)
+elif regr == "ridge":
+    all_tissue_res.to_csv("gtex_outputs/ridge_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\t', index=True)
+elif regr == "elasticnet":
+    all_tissue_res.to_csv("gtex_outputs/elasticnet_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\t', index=True)
+elif regr == "l1logistic":
+    all_tissue_res.to_csv("gtex_outputs/l1logistic_PTyj_f1ma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\t', index=True)
+elif regr == "randomforest":
+    all_tissue_res.to_csv("gtex_outputs/randomforest_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\t', index=True)
