@@ -1,11 +1,13 @@
 from train_gtex_all_lasso import Train_all_tissue_aging_model_lasso
 from train_gtex_all_elasticnet import Train_all_tissue_aging_model_elasticnet
+from train_gtex_all_randomforest import Train_all_tissue_aging_model_randomforest
 from tissue_agegap_analytics_multi import analyse_tissue_agegaps
 import pandas as pd
 import numpy as np
 import json
 import sys
 import signal
+import os
 
 def to_ternary(n):
     ternary_str = ''
@@ -27,7 +29,7 @@ split_id_r = sys.argv[3]
 split_id = "cl1sp" + str(split_id_r)
 regr = sys.argv[4]
 
-if gene_sort_crit != '20p' and gene_sort_crit != '1000':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
     print ("Invalid gene sort criteria")
     exit (1)
 if int(n_bs) > 500:
@@ -43,9 +45,18 @@ md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_An
 md_hot_train['AGE'] = md_hot_train['AGE'].astype(float)
 bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_500.json"))
 
-df = pd.read_csv(filepath_or_buffer=f'gtex_outputs/{"lasso"}_corr{gene_sort_crit}_bs{n_bs}_{split_id}_age_guess.csv', 
-                 sep=',',
-                 dtype={'ordering': 'object'}).set_index("ordering")
+file_path = f'gtex_outputs/{regr}_corr{gene_sort_crit}_bs{n_bs}_{split_id}_age_guess.csv'
+
+# Check if file exists
+if not os.path.exists(file_path):
+    # If the file does not exist, create a new DataFrame
+    print(f"File {file_path} does not exist. Creating a new DataFrame.")
+    df = pd.DataFrame(columns=['mse', 'r2', 'r2_yhat'])
+    df.index.name = "ordering"
+else:
+    # If the file exists, load the existing DataFrame
+    print(f"File {file_path} exists. Loading the DataFrame.")
+    df = pd.read_csv(filepath_or_buffer=file_path, sep=',', dtype={'ordering': 'object'}).set_index("ordering")
 
 if len(df['mse']) == 0:
     prev_index = -1
@@ -87,6 +98,18 @@ for t in range (prev_index+1, 729):
                         n_bs=n_bs,
                         split_id=split_id
                         )
+    elif regr == "randomforest":
+        Train_all_tissue_aging_model_randomforest(md_hot_train_abcdef, #meta data dataframe with age and sex (binary) as columns
+                        df_prot_train, #protein expression dataframe returning method (by tissue)
+                        bs_seed_list, #bootstrap seeds
+                        performance_CUTOFF=performance_CUTOFF, #heuristic for model simplification
+                        NPOOL=15, #parallelize
+                        train_cohort=train_cohort, #these three variables for file naming
+                        norm=norm, 
+                        agerange=agerange, 
+                        n_bs=n_bs,
+                        split_id=split_id
+                        )
     metrics = analyse_tissue_agegaps (split_id_r1=split_id_r,
         split_id_r2=split_id_r,
         n_bs=n_bs,
@@ -95,6 +118,6 @@ for t in range (prev_index+1, 729):
         curr_ordering=f
     )
     df.loc[f] = list(metrics)
-    df.to_csv(f'gtex_outputs/{"lasso"}_corr{gene_sort_crit}_bs{n_bs}_{split_id}_age_guess.csv', index=True)  # Set index=True to include the index in the file
+    df.to_csv(f'gtex_outputs/{regr}_corr{gene_sort_crit}_bs{n_bs}_{split_id}_age_guess.csv', index=True)  # Set index=True to include the index in the file
 
 signal.pause()  

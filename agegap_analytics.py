@@ -71,6 +71,7 @@ def agegap_dist_analytics (df, cols, gene_sort_crit, n_bs, split_id, regr, plot)
             print()
 
         if plot == True:
+            plt.figure(figsize=(6, 3))
             bin_count = 50
             counts, bin_edges = np.histogram(data_points, bins=bin_count)
             # cmap = plt.get_cmap('coolwarm')

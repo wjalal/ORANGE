@@ -20,7 +20,7 @@ n_bs = sys.argv[2]
 split_id = sys.argv[3]
 regr = sys.argv[4]
 
-if gene_sort_crit != '20p' and gene_sort_crit != '1000':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
     print ("Invalid gene sort criteria")
     exit (1)
 if int(n_bs) > 500:
@@ -109,8 +109,8 @@ class CreateGTExTissueAgeObject:
         dfres_agegap = dfres.copy()
         # calculate agegap using lowess of predicted vs chronological age from training cohort
         lowess = sm.nonparametric.lowess
-        lowess_fit = lowess(dfres_agegap.Predicted_Age.to_numpy(), dfres_agegap.AGE.to_numpy(), frac=2/3, it=5)
-        lowess_fit_int = interp1d(lowess_fit[:,0], lowess_fit[:,1], bounds_error=False, kind='linear', fill_value='extrapolate') 
+        lowess_fit = lowess(dfres_agegap.Predicted_Age.to_numpy(), dfres_agegap.AGE.to_numpy(), frac=0.8, it=3)
+        lowess_fit_int = interp1d(lowess_fit[:,0], lowess_fit[:,1], bounds_error=False, kind='linear', fill_value=(0, 150)) 
         y_lowess = lowess_fit_int(dfres_agegap.AGE)
         dfres_agegap["yhat_lowess"] = y_lowess
         # dfres_agegap["yhat_lowess"] = age_prediction_lowess(np.array(dfres_agegap.Age))
@@ -142,10 +142,12 @@ def test_OrganAge (tissue):
 with open('gtex/organ_list.dat', 'r') as file:
     tissues = [line.strip() for line in file]
 
+union_indices = set()
+
 for tissue in tissues:
     print ("TESTING ON " + tissue)
     res = test_OrganAge(tissue)
-    # print (res)
+    print (res)
     # print(res["AGE"].describe())
 
     # print(res["DTHHRDY"].describe())
@@ -176,7 +178,7 @@ for tissue in tissues:
         plt.savefig("gtex_outputs/l1logistic_PTyj_f1ma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + tissue + ".png")
     plt.clf()
     # all_tissue_res['p_age_' + tissue] = res["Predicted_Age"]
-    all_tissue_res['agegap_' + tissue] = res['AgeGap']
+    all_tissue_res.loc[res.index, 'agegap_' + tissue] = res['AgeGap']
     tissue_res = pd.DataFrame(index=res.index)
     tissue_res['agegap_' + tissue] = res['AgeGap']
     tissue_res['DTHHRDY'] = res['DTHHRDY']

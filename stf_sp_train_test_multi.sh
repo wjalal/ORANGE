@@ -1,17 +1,19 @@
 #!/bin/bash
 c="20p"
 b="20"
-clsp="cl1sp"
-train=false
+clsp="cmn"
+train=true
 test=true
 
-regr=("lasso" "ridge" "elasticnet" "randomforest")
+regr=("elasticnet")
 
-for i in {202301..202311}; do
+for i in {204218..204220}; do
+    # if [ "$train" = true ]; then
+    #     python3 stratified_split_dthhrdy.py "$c" "$i"
+    # fi
     if [ "$train" = true ]; then
-        python3 stratified_split_dthhrdy.py "$c" "$i"
+        python3 common_test.py "$c" "$i"
     fi
-
     for r in "${regr[@]}"; do
         if [ "$train" = true ]; then
             python3 train_gtex_all_"$r".py "$c" "$b" "${clsp}${i}"

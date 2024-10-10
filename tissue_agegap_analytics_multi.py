@@ -15,7 +15,7 @@ from scipy.stats import norm
 from agegap_analytics import *
 from sklearn.metrics import mean_squared_error, r2_score
 
-def analyse_tissue_agegaps(split_id_r1, split_id_r2, n_bs, gene_sort_crit, regr, curr_ordering = "111210"):
+def analyse_tissue_agegaps(sp_st, split_id_r1, split_id_r2, n_bs, gene_sort_crit, regr, curr_ordering = "222100"):
     with open('gtex/organ_list.dat', 'r') as file:
         tissues = [line.strip() for line in file]
 
@@ -40,7 +40,7 @@ def analyse_tissue_agegaps(split_id_r1, split_id_r2, n_bs, gene_sort_crit, regr,
             })
 
     for s in range (int(split_id_r1), int(split_id_r2)+1):
-        split_id = "cl1sp" + str(s)
+        split_id = sp_st + str(s)
         class CreateGTExTissueAgeObject:
             # init method or constructor
             def __init__(self, organ, path_bootstrap_seeds='Bootstrap_and_permutation_500_seed_dict_500.json'):
@@ -282,17 +282,19 @@ def analyse_tissue_agegaps(split_id_r1, split_id_r2, n_bs, gene_sort_crit, regr,
 if __name__ == "__main__":
     gene_sort_crit = sys.argv[1]
     n_bs = sys.argv[2]
-    split_id_r1 = sys.argv[3]
-    split_id_r2 = sys.argv[4]
-    regr = sys.argv[5]
+    sp_st = sys.argv[3]
+    split_id_r1 = sys.argv[4]
+    split_id_r2 = sys.argv[5]
+    regr = sys.argv[6]
 
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
         print ("Invalid gene sort criteria")
         exit (1)
     if int(n_bs) > 500:
         print ("n_bs > 500 not possible")
         exit (1)
-    analyse_tissue_agegaps (split_id_r1=split_id_r1,
+    analyse_tissue_agegaps (sp_st=sp_st,
+                            split_id_r1=split_id_r1,
                             split_id_r2=split_id_r2,
                             n_bs=n_bs,
                             regr=regr,

@@ -78,7 +78,7 @@ def Train_all_tissue_aging_model_elasticnet(md_hot_train, df_prot_train,
         print ("starting bootstrap training...")
         pool = mp.Pool(NPOOL)
         input_list = [([df_X_train, df_Y_train, train_cohort,
-                        tissue, performance_CUTOFF, norm, agerange] + [seed_list[i]]) for i in range(NUM_BOOTSTRAP)]        
+                        tissue, performance_CUTOFF, norm, agerange, n_bs, split_id] + [seed_list[i]]) for i in range(NUM_BOOTSTRAP)]        
         coef_list = pool.starmap(Bootstrap_train, input_list)
         pool.close()
         pool.join()
@@ -88,7 +88,7 @@ def Train_all_tissue_aging_model_elasticnet(md_hot_train, df_prot_train,
   
     
 def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
-              tissue, performance_CUTOFF, norm, agerange, seed):
+              tissue, performance_CUTOFF, norm, agerange, n_bs, split_id, seed):
     
     #setup
     X_train_sample = df_X_train.sample(frac=1, replace=True, random_state=seed).to_numpy()
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     gene_sort_crit = sys.argv[1]
     n_bs = sys.argv[2]
     split_id = sys.argv[3]
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
         print ("Invalid gene sort criteria")
         exit (1)
     if int(n_bs) > 500:
@@ -200,7 +200,7 @@ if __name__ == "__main__":
                                         df_prot_train, #protein expression dataframe returning method (by tissue)
                                         bs_seed_list, #bootstrap seeds
                                         performance_CUTOFF=performance_CUTOFF, #heuristic for model simplification
-                                        NPOOL=15, #parallelize
+                                        NPOOL=7, #parallelize
                                         
                                         train_cohort=train_cohort, #these three variables for file naming
                                         norm=norm, 

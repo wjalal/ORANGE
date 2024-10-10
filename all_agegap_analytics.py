@@ -18,7 +18,7 @@ n_bs = sys.argv[2]
 split_id = sys.argv[3]
 regr = sys.argv[4]
 
-if gene_sort_crit != '20p' and gene_sort_crit != '1000':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
     print ("Invalid gene sort criteria")
     exit (1)
 if int(n_bs) > 500:

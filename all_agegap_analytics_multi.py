@@ -15,11 +15,12 @@ from agegap_analytics import *
 
 gene_sort_crit = sys.argv[1]
 n_bs = sys.argv[2]
-split_id_r1 = sys.argv[3]
-split_id_r2 = sys.argv[4]
-regr = sys.argv[5]
+sp_st = sys.argv[3]
+split_id_r1 = sys.argv[4]
+split_id_r2 = sys.argv[5]
+regr = sys.argv[6]
 
-if gene_sort_crit != '20p' and gene_sort_crit != '1000':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
     print ("Invalid gene sort criteria")
     exit (1)
 if int(n_bs) > 500:
@@ -39,7 +40,7 @@ for col in cols:
         })
         
 for s in range (int(split_id_r1), int(split_id_r2)+1):
-    split_id = "cl1sp" + str(s)
+    split_id = sp_st + str(s)
     if regr == "lasso":
         all_tissue_res = pd.read_csv(filepath_or_buffer="gtex_outputs/lasso_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + ".tsv", sep='\s+').set_index("SUBJID")
     elif regr == "ridge":
@@ -62,7 +63,7 @@ for s in range (int(split_id_r1), int(split_id_r2)+1):
     all_tissue_res['max_agegap'] = all_tissue_res[subset_cols].max(axis=1)
     all_tissue_res['min_agegap'] = all_tissue_res[subset_cols].min(axis=1)
 
-    result = agegap_dist_analytics (all_tissue_res, cols, gene_sort_crit, n_bs, split_id, regr, False)
+    result = agegap_dist_analytics (all_tissue_res, cols, gene_sort_crit, n_bs, split_id, regr, True)
     for col in cols:
         for k in range (0,5):
             all_tissue_dth_agegap[col][k]['p_gt'] += result[col][k]['p_gt']

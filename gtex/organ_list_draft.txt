@@ -47,3 +47,16 @@ brain_cortex
 adrenal_gland
 kidney_cortex
 pituitary
+...................
+liver
+artery_aorta
+lung
+skin_sun_exposed_lower_leg
+artery_coronary
+brain_cortex
+brain_cerebellum
+adrenal_gland
+heart_atrial_appendage
+pituitary
+adipose_subcutaneous
+nerve_tibial

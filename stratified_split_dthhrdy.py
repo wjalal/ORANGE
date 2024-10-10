@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 gene_sort_crit = sys.argv[1]
 rand_seed = sys.argv[2]
-if gene_sort_crit != '20p' and gene_sort_crit != '1000':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
     print ("Invalid args")
     exit (1)
 

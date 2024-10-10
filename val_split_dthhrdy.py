@@ -3,7 +3,7 @@ import math
 import sys
 
 gene_sort_crit = sys.argv[1]
-if gene_sort_crit != '20p' and gene_sort_crit != '1000':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
     print ("Invalid args")
     exit (1)
 

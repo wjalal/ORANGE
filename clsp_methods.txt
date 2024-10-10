@@ -9,4 +9,16 @@ cl1sp202101-15 : 80:(20 + dthhrdy(1)) | randomforest
 cl1sp202301-05 : 80:(20 + dthhrdy(1)) | lasso + ridge + elasticnet + randomforest
 
 
-cl1sp203001-? : true-age ordering
+cl1sp203001 : true-age ordering : artery_coronary : lasso+elasticnet
+cl1sp203001 : true-age ordering : artery_coronary : lasso
+cl1sp203003 : true-age ordering : liver : elasticnet
+
+
+cl1sp204001-02 : 80:(20 + dthhrdy(1)) | elasticnet | +smatsscr+smtsisch 
+
+cmn204101 : cmn 11 80:(20 + dthhrdy(1)) | elasticnet
+cmn204102 : cmn 9 80:(20 + dthhrdy(1)) | elasticnet ??
+cmn204102-08 : cmn 7 80:(20 + dthhrdy(1)) | elasticnet | 122100 ??
+cmn204110-14 : cmn 7 80:(20 + dthhrdy(1)) | elasticnet | 122100
+
+cmn204201-  : cmn 7 80:(20 + dthhrdy(1)) | elasticnet | 222100
