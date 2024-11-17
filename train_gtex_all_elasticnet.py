@@ -18,16 +18,24 @@ import random
 import os
 from adjustText import adjust_text
 import sys
+from sdv.single_table import TVAESynthesizer
+from sdv.metadata import Metadata
+import torch
+
+# Check if GPU is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
 # %matplotlib inline
 import mkl
 mkl.set_num_threads(1)
 
 import multiprocessing as mp
-from sklearn.linear_model import Lasso, LogisticRegression, Ridge, ElasticNet
+from sklearn.linear_model import Lasso, LogisticRegression, Ridge, ElasticNet, HuberRegressor
 from sklearn.model_selection import GridSearchCV
 
 
-def Train_all_tissue_aging_model_elasticnet(md_hot_train, df_prot_train,
+def Train_tissue_aging_model_elasticnet (tissue, md_hot_train, df_prot_train,
                                  seed_list, 
                                  performance_CUTOFF, train_cohort,
                                  norm, agerange, n_bs, split_id, NPOOL=15):
@@ -36,6 +44,89 @@ def Train_all_tissue_aging_model_elasticnet(md_hot_train, df_prot_train,
     seed_list = seed_list[:NUM_BOOTSTRAP]
     print(seed_list)
     # final lists for output
+    print ("STARTING TRAINING FOR " + tissue)
+    df_prot_train_tissue = df_prot_train (tissue)
+    df_prot_train_tissue.index.names = ['SUBJID']
+    md_hot_train_tissue = md_hot_train.merge(right = df_prot_train_tissue.index.to_series(), how='inner', left_index=True, right_index=True)
+
+    # zscore
+    # scaler = MinMaxScaler(feature_range = (0,1))
+    # scaler = RobustScaler()
+    # scaler = StandardScaler()
+    scaler = PowerTransformer(method='yeo-johnson')
+    scaler.fit(df_prot_train_tissue)
+    tmp = scaler.transform(df_prot_train_tissue)
+    df_prot_train_tissue = pd.DataFrame(tmp, index=df_prot_train_tissue.index, columns=df_prot_train_tissue.columns)
+    print (df_prot_train_tissue)
+
+    # save the scaler
+    path = 'gtex/train_splits/train_bs' + n_bs + '_' + split_id + '/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
+    fn = '/'+train_cohort+'_'+agerange+'_based_'+tissue+'_gene_zscore_scaler.pkl'
+    os.makedirs (path, exist_ok=True)
+    pickle.dump (scaler, open(path+fn, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+    print("z-scaler is ready...")
+
+    # add sex 
+    if "SEX" in list(md_hot_train_tissue.columns):
+        # print(md_hot_train[["SEX"]])
+        df_X_train = pd.concat([md_hot_train_tissue[["SEX"]], df_prot_train_tissue], axis=1)
+    else:
+        df_X_train = df_prot_train_tissue.copy()
+    df_Y_train = md_hot_train_tissue[["AGE"]].copy()
+    
+    print (df_X_train)
+    # comb_data = pd.concat ([df_X_train, df_Y_train], axis=1)
+    # print (comb_data)
+    # mdata = Metadata.detect_from_dataframe(
+    #         data=comb_data,
+    #         table_name='combined'
+    # )
+    # mdata.update_column(
+    #     column_name='SEX',
+    #     sdtype='categorical',
+    #     table_name='combined'
+    # )
+    # mdata.update_column(
+    #     column_name='AGE',
+    #     sdtype='categorical',
+    #     table_name='combined'
+    # )
+    # synth = TVAESynthesizer (
+    #     metadata= mdata,
+    #     enforce_min_max_values=True,
+    #     epochs=50,
+    #     verbose=True,
+    # )
+    # synth.fit (comb_data)
+    # synthetic_data = synth.sample(num_rows=3000)
+    # y_synth = synthetic_data[['AGE']]
+    # X_synth = synthetic_data.drop(columns=['AGE'])
+    # print (X_synth)
+    # print (y_synth)
+
+    # Bootstrap training
+    print ("starting bootstrap training...")
+    pool = mp.Pool(NPOOL)
+    input_list = [([df_X_train, df_Y_train, train_cohort,
+                    tissue, performance_CUTOFF, norm, agerange, n_bs, split_id] + [seed_list[i]]) for i in range(NUM_BOOTSTRAP)]        
+    # input_list = [([X_synth, y_synth, train_cohort,
+    #                 tissue, performance_CUTOFF, norm, agerange, n_bs, split_id] + [seed_list[i]]) for i in range(NUM_BOOTSTRAP)]        
+    
+    coef_list = pool.starmap(Bootstrap_train, input_list)
+    pool.close()
+    pool.join()
+    coef_list = pd.concat(coef_list, axis=1).mean(axis=1).abs().sort_values(ascending=False)
+    return coef_list          
+
+def Train_all_tissue_aging_model_elasticnet(md_hot_train, df_prot_train,
+                                 seed_list, 
+                                 performance_CUTOFF, train_cohort,
+                                 norm, agerange, n_bs, split_id, NPOOL=15):
+    # NUM_BOOTSTRAP = int(n_bs)
+    # seed_list = seed_list['BS_Seed']
+    # seed_list = seed_list[:NUM_BOOTSTRAP]
+    # print(seed_list)
+    # final lists for output
     all_coef_dfs = []   
     
     with open('gtex/organ_list.dat', 'r') as file:
@@ -43,47 +134,13 @@ def Train_all_tissue_aging_model_elasticnet(md_hot_train, df_prot_train,
 
     # Subset to tissue proteins, setup dfX/dfY
     for tissue in tissues:
-        print ("STARTING TRAINING FOR " + tissue)
-        df_prot_train_tissue = df_prot_train (tissue)
-        df_prot_train_tissue.index.names = ['SUBJID']
-        md_hot_train_tissue = md_hot_train.merge(right = df_prot_train_tissue.index.to_series(), how='inner', left_index=True, right_index=True)
-
-        # zscore
-        # scaler = MinMaxScaler(feature_range = (0,1))
-        # scaler = RobustScaler()
-        scaler = PowerTransformer(method='yeo-johnson')
-        scaler.fit(df_prot_train_tissue)
-        tmp = scaler.transform(df_prot_train_tissue)
-        df_prot_train_tissue = pd.DataFrame(tmp, index=df_prot_train_tissue.index, columns=df_prot_train_tissue.columns)
-        print (df_prot_train_tissue)
-
-        # save the scaler
-        path = 'gtex/train_splits/train_bs' + n_bs + '_' + split_id + '/data/ml_models/'+train_cohort+'/'+agerange+'/'+norm+'/'+tissue
-        fn = '/'+train_cohort+'_'+agerange+'_based_'+tissue+'_gene_zscore_scaler.pkl'
-        os.makedirs (path, exist_ok=True)
-        pickle.dump (scaler, open(path+fn, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
-        print("z-scaler is ready...")
-
-        # add sex 
-        if "SEX" in list(md_hot_train_tissue.columns):
-            # print(md_hot_train[["SEX"]])
-            df_X_train = pd.concat([md_hot_train_tissue[["SEX"]], df_prot_train_tissue], axis=1)
-        else:
-            df_X_train = df_prot_train_tissue.copy()
-        df_Y_train = md_hot_train_tissue[["AGE"]].copy()
-        
-        print (df_X_train)
-
-        # Bootstrap training
-        print ("starting bootstrap training...")
-        pool = mp.Pool(NPOOL)
-        input_list = [([df_X_train, df_Y_train, train_cohort,
-                        tissue, performance_CUTOFF, norm, agerange, n_bs, split_id] + [seed_list[i]]) for i in range(NUM_BOOTSTRAP)]        
-        coef_list = pool.starmap(Bootstrap_train, input_list)
-        pool.close()
-        pool.join()
-        
-    dfcoef=[]
+        dfcoef = Train_tissue_aging_model_elasticnet (
+            tissue, md_hot_train, df_prot_train,
+            seed_list, 
+            performance_CUTOFF, train_cohort,
+            norm, agerange, n_bs, split_id, NPOOL=15
+        )
+        print (dfcoef)
     return dfcoef
   
     
@@ -98,8 +155,8 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     # LASSO
     print ("starting elasticnet?... (seed = ", seed, ")")
     # lasso = Lasso(random_state=0, alpha=0.05, tol=0.01, max_iter=5000)
-    lasso = ElasticNet(random_state=0, tol=0.01, max_iter=50000)
-    alphas = np.logspace(-3, 1, 100)
+    lasso = ElasticNet(random_state=0, tol=0.01, max_iter=50000, l1_ratio=0.5)
+    alphas = np.logspace(-3, 1, 150)
     tuned_parameters = [{'alpha': alphas}]
     n_folds=4
     print("initialised elasticnet params setup... (seed = ", seed, ")")
@@ -120,9 +177,10 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     savefp="gtex/train_splits/train_bs" + n_bs + "_" + split_id + "/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_elasticnet_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
     pickle.dump(lasso, open(savefp, 'wb'))
     # SAVE coefficients            
-    coef_list = []
-
-    return coef_list
+    coef_list = lasso.coef_.flatten() # You can adjust this if more details are needed
+    coefficients_df = pd.Series(coef_list, index=df_X_train.columns)
+    print (coefficients_df)
+    return coefficients_df
     
 
 
@@ -178,7 +236,7 @@ if __name__ == "__main__":
     gene_sort_crit = sys.argv[1]
     n_bs = sys.argv[2]
     split_id = sys.argv[3]
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
         print ("Invalid gene sort criteria")
         exit (1)
     if int(n_bs) > 500:
@@ -200,7 +258,7 @@ if __name__ == "__main__":
                                         df_prot_train, #protein expression dataframe returning method (by tissue)
                                         bs_seed_list, #bootstrap seeds
                                         performance_CUTOFF=performance_CUTOFF, #heuristic for model simplification
-                                        NPOOL=7, #parallelize
+                                        NPOOL=1, #parallelize
                                         
                                         train_cohort=train_cohort, #these three variables for file naming
                                         norm=norm, 

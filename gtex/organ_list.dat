@@ -3,10 +3,12 @@ artery_aorta
 artery_coronary
 brain_cortex
 brain_cerebellum
-adrenal_gland
 heart_atrial_appendage
-pituitary
 adipose_subcutaneous
 lung
+adrenal_gland
+pituitary
 skin_sun_exposed_lower_leg
 nerve_tibial
+colon_sigmoid
+pancreas

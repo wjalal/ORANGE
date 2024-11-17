@@ -13,6 +13,8 @@ import seaborn as sns
 from scipy.stats import norm
 from matplotlib.colors import ListedColormap, BoundaryNorm
 from CondProbDthHrdy import *
+from matplotlib.ticker import MaxNLocator
+from scipy.stats import norm
 
 
 def agegap_dist_analytics (df, cols, gene_sort_crit, n_bs, split_id, regr, plot):
@@ -35,8 +37,8 @@ def agegap_dist_analytics (df, cols, gene_sort_crit, n_bs, split_id, regr, plot)
 
         for i in range(0,5):
             result[col].append({})
-            p_gt = cond_prob_dthhrdy_gt(df_agegap, i, mu+std)
-            p_lt = cond_prob_dthhrdy_lt(df_agegap, i, mu-std)
+            p_gt = cond_prob_dthhrdy_gt(df_agegap, i, mu+std*0.5)
+            p_lt = cond_prob_dthhrdy_lt(df_agegap, i, mu-std*0.5)
             # if round(p_gt,5) == 0 and round(p_lt,5) == 0:
             #     r = 1
             #     r_i = 1
@@ -71,49 +73,53 @@ def agegap_dist_analytics (df, cols, gene_sort_crit, n_bs, split_id, regr, plot)
             print()
 
         if plot == True:
-            plt.figure(figsize=(6, 3))
+            fig, ax = plt.subplots(figsize=(6, 4))
             bin_count = 50
             counts, bin_edges = np.histogram(data_points, bins=bin_count)
-            # cmap = plt.get_cmap('coolwarm')
 
-            # Define your custom colormap and boundary normalization
+            # Custom colormap and normalization
             colors = ['lightgray', 'green', 'yellow', 'orange', 'red']
             cmap = ListedColormap(colors)
-            bounds = [0, 1, 2, 3, 4, 5]  # Boundaries between each DTHHRDY value (add 5 to cover the range)norm = BoundaryNorm(bounds, cmap.N)
+            bounds = [0, 1, 2, 3, 4, 5]
+            color_norm = BoundaryNorm(bounds, cmap.N)
 
             for i in range(bin_count):
-                # Get the x-coordinate for the center of the bin
                 bin_center = (bin_edges[i] + bin_edges[i+1]) / 2
-                # Get the indices for the dots in this bin
                 indices = (data_points >= bin_edges[i]) & (data_points < bin_edges[i+1])
-                # Scatter the points vertically for this bin with color based on 'DTHHRDY'
-                # Sort dthhrdy_values for this bin in ascending order
                 dthhrdy_bin_values = dthhrdy_values[indices]
-                sorted_indices = np.argsort(dthhrdy_bin_values)
+                sort_key = np.where(dthhrdy_bin_values == 1, -1, dthhrdy_bin_values)
+                sorted_indices = np.argsort(sort_key)
                 plt.scatter([bin_center] * np.sum(indices), 
                             range(np.sum(indices)),
-                            color=cmap(dthhrdy_bin_values[sorted_indices] / max(dthhrdy_values)),  # Normalize DTHHRDY values
-                            marker='o', s=2)  # s is the size of the markers
+                            color=cmap(dthhrdy_bin_values[sorted_indices] / max(dthhrdy_values)),  
+                            marker='o', s=8)  
 
-            # plotting normal curve
+            # Plotting the normal curve
             xmin, xmax = plt.xlim()  
             x = np.linspace(xmin, xmax, 100)
             p = norm.pdf(x, mu, std)
-            plt.plot(x, p * max(counts)/max(p), 'black', linewidth=0.5)  
 
-            # Highlight specific regions under the curve
-            # region_1 = (x >= mu - 1 * std) & (x <= mu + 1 * std)  # 1 std region
-            region_2 = (x >= mu + 1 * std) 
-            region_3 = (x <= mu - 1 * std) 
+            # Define regions under the curve
+            region_2 = (x >= mu + 0.5 * std) 
+            region_3 = (x <= mu - 0.5 * std) 
 
-            # Fill between the curve and the x-axis for each region
-            # plt.fill_between(x, 0, p, where=region_1, color='lightblue', alpha=0.5)
-            plt.fill_between(x, 0, p, where=region_2, color='coral', alpha=0.5)
-            plt.fill_between(x, 0, p, where=region_3, color='green', alpha=0.5)
+            # Fill between the curve and x-axis for each region
+            plt.fill_between(x, -1, p * max(counts)/max(p), where=region_2, color='lightgray', alpha=0.25)
+            plt.fill_between(x, -1, p * max(counts)/max(p), where=region_3, color='lightgray', alpha=0.25)
 
-            plt.title("All organ ageGap distribution")
+            plt.plot(x, p * max(counts)/max(p), 'black', linewidth=0.25)  
+
+            # Set titles and labels
+            plt.title(f"{col} distribution")
             plt.xlabel("AgeGap")
             plt.ylabel("Frequency")
+
+            # Set y-axis to integer values
+            plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+
+            # Adjust plot margins
+            plt.subplots_adjust(left=0.08, right=0.99, top=0.999, bottom=0.15)
+
             # plt.show()
             if regr == "lasso":
                 plt.savefig("gtex_outputs/analytics_lasso_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + col + ".png")
@@ -125,5 +131,33 @@ def agegap_dist_analytics (df, cols, gene_sort_crit, n_bs, split_id, regr, plot)
                 plt.savefig("gtex_outputs/analytics_randomforest_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + col + ".png")
             elif regr == "logistic":
                 plt.savefig("gtex_outputs/analytics_logistic_PTyj_f1ma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + col + ".png")
+            elif regr == "svr":
+                plt.savefig("gtex_outputs/analytics_svr_PTyj_f1ma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + col + ".png")
+            elif regr == "pls":
+                plt.savefig("gtex_outputs/analytics_pls_PTyj_f1ma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id + "_" + col + ".png")
+            
+            # Dummy scatter points for legend entries (represent DTHHRDY values)
+            handles = []
+            for color, dthhrdy_value in zip(colors, range(len(colors))):
+                handle = ax.scatter([], [], color=color, label=f'DTHHRDY {dthhrdy_value}', marker='o', s=20)
+                handles.append(handle)
+
+            # Represent Region 2 and Region 3 as triangles for legend
+            region2_handle = plt.Line2D([], [], color='coral', marker='v', markersize=10, alpha=0.5,
+                                        linestyle='None', label='Region (>= μ + 0.5σ)')
+            region3_handle = plt.Line2D([], [], color='green', marker='^', markersize=10, alpha=0.5,
+                                        linestyle='None', label='Region (<= μ - 0.5σ)')
+            handles.extend([region2_handle, region3_handle])
+
+            # Generate legend
+            figlegend = plt.figure(figsize=(3, 2))
+            figlegend.legend(handles=handles, loc='center')
+            plt.axis('off')
+
+            # Save legend as a separate image
+            figlegend.savefig("gtex_outputs/agegap_dist_legend_image.png", bbox_inches='tight')
+            plt.close(figlegend)
+            plt.close(fig)
+
             plt.clf()
     return result

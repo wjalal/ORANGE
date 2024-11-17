@@ -3,7 +3,7 @@ import math
 import sys
 
 gene_sort_crit = sys.argv[1]
-if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
     print ("Invalid args")
     exit (1)
     
@@ -28,9 +28,9 @@ for organ in organ_list:
     print (corr.size)
     if corr.size > 1000 and gene_sort_crit == '1000':
         corr = corr[:1000]
-    # print (corr)
-    print (corr.size)
+    print (corr)
+    # print (corr.size)
     df_gene = df_gene[corr.keys().to_list()]
     df_gene.index.names = ['Name']
     # print (df_gene)
-    df_gene.to_csv("../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + organ + ".tsv", sep='\t', index=True)
+    df_gene.to_csv("../../../gtex/proc/proc_data/reduced/cringe/corr" + gene_sort_crit + "/" + organ + ".tsv", sep='\t', index=True)

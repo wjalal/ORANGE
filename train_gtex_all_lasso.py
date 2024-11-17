@@ -23,7 +23,7 @@ import mkl
 mkl.set_num_threads(1)
 
 import multiprocessing as mp
-from sklearn.linear_model import Lasso, LogisticRegression, Ridge
+from sklearn.linear_model import Lasso, LogisticRegression, Ridge, LassoLars
 from sklearn.model_selection import GridSearchCV
 
 
@@ -95,35 +95,42 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     Y_train_sample = df_Y_train.sample(frac=1, replace=True, random_state=seed).to_numpy()    
     print("did bootstrap setup... (seed = ", seed, ")")
     
-    # LASSO
-    print ("starting lasso?... (seed = ", seed, ")")
-    # lasso = Lasso(random_state=0, alpha=0.05, tol=0.01, max_iter=5000)
-    lasso = Lasso(random_state=0, tol=0.01, max_iter=50000)
+    # LassoLars
+    print ("starting LassoLars?... (seed = ", seed, ")")
+    lasso_lars = LassoLars(max_iter=1000)  # Use LassoLars instead of Lasso
     alphas = np.logspace(-3, 1, 100)
     tuned_parameters = [{'alpha': alphas}]
-    n_folds=4
-    print("initialised lasso params setup... (seed = ", seed, ")")
-    clf = GridSearchCV(lasso, tuned_parameters, cv=n_folds, scoring="neg_mean_absolute_error", refit=False)
-
+    n_folds = 4
+    print("initialised LassoLars params setup... (seed = ", seed, ")")
+    
+    # GridSearchCV with LassoLars
+    clf = GridSearchCV(lasso_lars, tuned_parameters, cv=n_folds, scoring="neg_mean_absolute_error", refit=False)
+    
     print("gridSearch done... (seed = ", seed, ")")
     clf.fit(X_train_sample, Y_train_sample)
     print("gridSearch fitting done... (seed = ", seed, ")")
-    gsdf = pd.DataFrame(clf.cv_results_)    
-    print("Plot nad Pick STARTING :(... (seed = ", seed, ")")
-    best_alpha=Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
-    print("Plot nad Pick done... (seed = ", seed, ")")
-    # Retrain 
-    lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=50000)
-    lasso.fit(X_train_sample, Y_train_sample)
-    print ("lasso retrained.. (seed = ", seed, ")")
+    
+    # Extracting GridSearch results
+    gsdf = pd.DataFrame(clf.cv_results_)
+    print("Plot and Pick STARTING :(... (seed = ", seed, ")")
+    
+    # Pick the best alpha
+    best_alpha = Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False)
+    print("Plot and Pick done... (seed = ", seed, ")")
+    
+    # Retrain with the best alpha
+    lasso_lars = LassoLars(alpha=best_alpha, max_iter=1000)
+    lasso_lars.fit(X_train_sample, Y_train_sample)
+    print ("LassoLars retrained.. (seed = ", seed, ")")
+    
     # SAVE MODEL
-    savefp="gtex/train_splits/train_bs" + n_bs + "_" + split_id + "/data/ml_models/"+train_cohort+"/"+agerange+"/"+norm+"/"+tissue+"/"+train_cohort+"_"+agerange+"_"+norm+"_lasso_"+tissue+"_seed"+str(seed)+"_aging_model.pkl"
-    pickle.dump(lasso, open(savefp, 'wb'))
+    savefp = "gtex/train_splits/train_bs" + n_bs + "_" + split_id + "/data/ml_models/" + train_cohort + "/" + agerange + "/" + norm + "/" + tissue + "/" + train_cohort + "_" + agerange + "_" + norm + "_lasso_lars_" + tissue + "_seed" + str(seed) + "_aging_model.pkl"
+    pickle.dump(lasso_lars, open(savefp, 'wb'))
+    
     # SAVE coefficients            
     coef_list = []
 
     return coef_list
-    
 
 
 def Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=True):
@@ -178,7 +185,7 @@ if __name__ == "__main__":
     gene_sort_crit = sys.argv[1]
     n_bs = sys.argv[2]
     split_id = sys.argv[3]
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
         print ("Invalid gene sort criteria")
         exit (1)
     if int(n_bs) > 500:
@@ -200,7 +207,7 @@ if __name__ == "__main__":
                                         df_prot_train, #protein expression dataframe returning method (by tissue)
                                         bs_seed_list, #bootstrap seeds
                                         performance_CUTOFF=performance_CUTOFF, #heuristic for model simplification
-                                        NPOOL=15, #parallelize
+                                        NPOOL=1, #parallelize
                                         train_cohort=train_cohort, #these three variables for file naming
                                         norm=norm, 
                                         agerange=agerange, 

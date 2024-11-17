@@ -1,0 +1,59 @@
+=====================
+max_agegap
+=====================
+
+p(dthhrdy=0 | agegap>=4.3708) = 0.0000
+p(dthhrdy=0 | agegap<=-3.1483) = 0.0000
+p(dthhrdy=0 | -0.1407<agegap<1.3632) = 0.0000
+p(dthhrdy=0) = 0.0000
+
+p(dthhrdy=1 | agegap>=4.3708) = 1.0000
+p(dthhrdy=1 | agegap<=-3.1483) = 1.0000
+p(dthhrdy=1 | -0.1407<agegap<1.3632) = 1.0000
+p(dthhrdy=1) = 1.0000
+
+p(dthhrdy=2 | agegap>=4.3708) = 0.0000
+p(dthhrdy=2 | agegap<=-3.1483) = 0.0000
+p(dthhrdy=2 | -0.1407<agegap<1.3632) = 0.0000
+p(dthhrdy=2) = 0.0000
+
+p(dthhrdy=3 | agegap>=4.3708) = 0.0000
+p(dthhrdy=3 | agegap<=-3.1483) = 0.0000
+p(dthhrdy=3 | -0.1407<agegap<1.3632) = 0.0000
+p(dthhrdy=3) = 0.0000
+
+p(dthhrdy=4 | agegap>=4.3708) = 0.0000
+p(dthhrdy=4 | agegap<=-3.1483) = 0.0000
+p(dthhrdy=4 | -0.1407<agegap<1.3632) = 0.0000
+p(dthhrdy=4) = 0.0000
+
+=====================
+min_agegap
+=====================
+
+p(dthhrdy=0 | agegap>=4.3708) = 0.0000
+p(dthhrdy=0 | agegap<=-3.1483) = 0.0000
+p(dthhrdy=0 | -0.1407<agegap<1.3632) = 0.0000
+p(dthhrdy=0) = 0.0000
+
+p(dthhrdy=1 | agegap>=4.3708) = 1.0000
+p(dthhrdy=1 | agegap<=-3.1483) = 1.0000
+p(dthhrdy=1 | -0.1407<agegap<1.3632) = 1.0000
+p(dthhrdy=1) = 1.0000
+
+p(dthhrdy=2 | agegap>=4.3708) = 0.0000
+p(dthhrdy=2 | agegap<=-3.1483) = 0.0000
+p(dthhrdy=2 | -0.1407<agegap<1.3632) = 0.0000
+p(dthhrdy=2) = 0.0000
+
+p(dthhrdy=3 | agegap>=4.3708) = 0.0000
+p(dthhrdy=3 | agegap<=-3.1483) = 0.0000
+p(dthhrdy=3 | -0.1407<agegap<1.3632) = 0.0000
+p(dthhrdy=3) = 0.0000
+
+p(dthhrdy=4 | agegap>=4.3708) = 0.0000
+p(dthhrdy=4 | agegap<=-3.1483) = 0.0000
+p(dthhrdy=4 | -0.1407<agegap<1.3632) = 0.0000
+p(dthhrdy=4) = 0.0000
+
+{'max_agegap': [{'p_gt': 0.0, 'p_lt': 0.0, 'p_r': 0.0, 'p_d': 0.0}, {'p_gt': 1.0, 'p_lt': 1.0, 'p_r': 1.0, 'p_d': 1.0}, {'p_gt': 0.0, 'p_lt': 0.0, 'p_r': 0.0, 'p_d': 0.0}, {'p_gt': 0.0, 'p_lt': 0.0, 'p_r': 0.0, 'p_d': 0.0}, {'p_gt': 0.0, 'p_lt': 0.0, 'p_r': 0.0, 'p_d': 0.0}], 'min_agegap': [{'p_gt': 0.0, 'p_lt': 0.0, 'p_r': 0.0, 'p_d': 0.0}, {'p_gt': 1.0, 'p_lt': 1.0, 'p_r': 1.0, 'p_d': 1.0}, {'p_gt': 0.0, 'p_lt': 0.0, 'p_r': 0.0, 'p_d': 0.0}, {'p_gt': 0.0, 'p_lt': 0.0, 'p_r': 0.0, 'p_d': 0.0}, {'p_gt': 0.0, 'p_lt': 0.0, 'p_r': 0.0, 'p_d': 0.0}]}

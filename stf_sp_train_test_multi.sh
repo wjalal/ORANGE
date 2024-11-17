@@ -2,12 +2,12 @@
 c="20p"
 b="20"
 clsp="cmn"
-train=true
+train=false
 test=true
 
-regr=("elasticnet")
+regr=("pls")
 
-for i in {204218..204220}; do
+for i in {204201..204225}; do
     # if [ "$train" = true ]; then
     #     python3 stratified_split_dthhrdy.py "$c" "$i"
     # fi
@@ -21,7 +21,7 @@ for i in {204218..204220}; do
         if [ "$test" = true ]; then
             python3 test_gtex_train.py "$c" "$b" "${clsp}${i}" "$r"
         fi
-        python3 all_agegap_analytics.py "$c" "$b" "${clsp}${i}" "$r" > "gtex_outputs/clsp_analytics_rec_${r}_${c}_${i}.txt"
+        # python3 all_agegap_analytics.py "$c" "$b" "${clsp}${i}" "$r" > "gtex_outputs/clsp_analytics_rec_${r}_${c}_${i}.txt"
     done
 done
 

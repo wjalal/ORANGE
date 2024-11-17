@@ -178,7 +178,7 @@ if __name__ == "__main__":
     gene_sort_crit = sys.argv[1]
     n_bs = sys.argv[2]
     split_id = sys.argv[3]
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
         print ("Invalid gene sort criteria")
         exit (1)
         

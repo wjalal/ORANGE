@@ -22,3 +22,9 @@ cmn204102-08 : cmn 7 80:(20 + dthhrdy(1)) | elasticnet | 122100 ??
 cmn204110-14 : cmn 7 80:(20 + dthhrdy(1)) | elasticnet | 122100
 
 cmn204201-  : cmn 7 80:(20 + dthhrdy(1)) | elasticnet | 222100
+
+cmn205001-  : cmn 7 80:(20 + dthhrdy(1)) | elasticnet | 222100 | deg.20p
+cmn205101   : PTyj vs ss --> PTyj
+cmn205201   : alphas
+cmn205201   : svr 
+cmn205002   : corr20pwo1  :(

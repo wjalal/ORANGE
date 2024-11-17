@@ -1897,7 +1897,7 @@ plugins = ["importlib-metadata"]
 [[package]]
 name = "pyparsing"
 version = "3.0.9"
-description = "pyparsing module - Classes and methods to define and execute parsing grammars"
+description = "pyparsing module - Classes and methods to define and execute parsing grampls"
 category = "dev"
 optional = false
 python-versions = ">=3.6.8"
