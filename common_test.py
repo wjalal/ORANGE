@@ -8,7 +8,7 @@ from sklearn.utils import resample
 def main():
     gene_sort_crit = sys.argv[1]
     rand_seed = sys.argv[2]
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
         print ("Invalid args")
         exit (1)
 
@@ -24,7 +24,7 @@ def main():
     for organ in organ_name_list:
         obj = {
             'name' : organ,
-            'df' : pd.read_csv("../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + organ + ".tsv", sep='\s+').set_index("Name")
+            'df' : pd.read_csv("proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + organ + ".tsv", sep='\s+').set_index("Name")
         }
         organ_list.append(obj)
 
@@ -95,8 +95,8 @@ def main():
         # print(df_gene_test.shape)
         union_indices = union_indices.union(df_gene_test.index)
 
-        df_gene_train.to_csv("../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + organ['name'] + ".TRAIN.cmn" + rand_seed + ".tsv", sep='\t', index=True)
-        df_gene_test.to_csv("../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + organ['name'] + ".TEST.cmn" + rand_seed + ".tsv", sep='\t', index=True)
+        df_gene_train.to_csv("proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + organ['name'] + ".TRAIN.cmn" + rand_seed + ".tsv", sep='\t', index=True)
+        df_gene_test.to_csv("proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + organ['name'] + ".TEST.cmn" + rand_seed + ".tsv", sep='\t', index=True)
 
     union_series = pd.Series(list(union_indices))
     print (len(union_series))

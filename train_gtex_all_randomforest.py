@@ -98,21 +98,33 @@ def Train(df_X_train, df_Y_train, train_cohort,
     n_folds=4
     print("initialised randomforest params setup..")
 
-    rf = RandomForestRegressor(random_state=69420, n_estimators=500)
-    # n_estimators = [100, 200, 500]  # Example hyperparameter to tune
-    # max_depth = [10, 20, None]
-    # tuned_parameters = [{'n_estimators': n_estimators, 'max_depth': max_depth}]
-    # clf = GridSearchCV(lasso, tuned_parameters, cv=n_folds, scoring="neg_mean_absolute_error", refit=False)
+    rf = RandomForestRegressor(random_state=69420, n_estimators=20, max_features=1.0)
 
+
+    #     # Defining range of components to try in grid search
+    # estimators = np.rint(np.linspace (5, 50, 10)).astype(int)  # limiting to a max of 20 components or fewer
+    # print (estimators) 
+    # tuned_parameters = [{'n_estimators': estimators}]
+    # n_folds = 4
+    # print("initialised rf params setup... (seed = ", seed, ")")
+    
+    # # Grid Search
+    # clf = GridSearchCV(rf, tuned_parameters, cv=n_folds, scoring="neg_mean_absolute_error", refit=False)
+    
     # print("gridSearch done... (seed = ", seed, ")")
-    # clf.fit(df_X_train, Y_train_sample)
+    # clf.fit(df_X_train.to_numpy(), df_Y_train.to_numpy().ravel())
     # print("gridSearch fitting done... (seed = ", seed, ")")
-    # gsdf = pd.DataFrame(clf.cv_results_)    
-    # print("Plot nad Pick STARTING :(... (seed = ", seed, ")")
-    # best_alpha=Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False)   #pick best alpha
-    # print("Plot nad Pick done... (seed = ", seed, ")")
-    # Retrain 
-    # lasso = Lasso(alpha=best_alpha, random_state=0, tol=0.01, max_iter=50000)
+    
+    # gsdf = pd.DataFrame(clf.cv_results_)
+    
+    # print("Plot and Pick STARTING :(... (seed = ", seed, ")")
+    # best_n_estimators = Plot_and_pick_n_estimators(gsdf, performance_CUTOFF, plot=False)  # Pick best component count
+    # print("Plot and Pick done... (seed = ", seed, ")")
+    
+    # # Retrain with best parameters
+    # rf = RandomForestRegressor(random_state=69420, n_estimators=best_n_estimators)
+
+
     rf.fit(df_X_train.to_numpy(), df_Y_train.to_numpy().ravel())
     print ("lasso retrained...")
     # SAVE MODEL
@@ -125,44 +137,68 @@ def Train(df_X_train, df_Y_train, train_cohort,
     
 
 
-# def Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=True):
+def Plot_and_pick_n_estimators(gsdf, performance_CUTOFF, plot=True):
+    """
+    This function selects the best number of components based on the performance cutoff and plots the results.
     
-#     #pick alpha at 90-95% top performance, negative derivative (higher alpha)
-#     gsdf["mean_test_score_norm"] = NormalizeData(gsdf["mean_test_score"])
-#     print ("P&P normalised...")
-#     gsdf["mean_test_score_norm_minus95"] = gsdf["mean_test_score_norm"]-performance_CUTOFF
-#     print ("P&P normalised and cut off...")
-#     gsdf["mean_test_score_norm_minus95_abs"] = np.abs(gsdf["mean_test_score_norm_minus95"])
-#     print ("P&P finding derivative...")
-#         #derivative of performance by alpha
-#     x=gsdf.param_alpha.to_numpy()
-#     y=gsdf.mean_test_score_norm.to_numpy()
-#     dx=0.1
-#     gsdf["derivative"] = np.gradient(y, dx)
-#     print ("P&P FOUND derivative...")
-#     tmp=gsdf.loc[gsdf.derivative<0]
-#     if len(tmp)!=0:
-#         best_alpha = list(tmp.loc[tmp.mean_test_score_norm_minus95_abs == np.min(tmp.mean_test_score_norm_minus95_abs)].param_alpha)[0]
-#     else:
-#         print('no alpha with derivative <0')
-#         tmp2=gsdf
-#         best_alpha = list(tmp2.loc[tmp2.mean_test_score_norm_minus95_abs == np.min(tmp2.mean_test_score_norm_minus95_abs)].param_alpha)[0]
-        
-#     # PLOT
-#     if plot:
-#         fig,axs=plt.subplots(1,2,figsize=(7,3))
-#         sns.scatterplot(data=gsdf, x="param_alpha", y="mean_test_score_norm", ax=axs[0])
-#         sns.scatterplot(data=gsdf.loc[gsdf.param_alpha==best_alpha], x="param_alpha", y="mean_test_score_norm", ax=axs[0])
-#         sns.scatterplot(data=gsdf, x="param_alpha", y="mean_test_score_norm", ax=axs[1])
-#         sns.scatterplot(data=gsdf.loc[gsdf.param_alpha==best_alpha], x="param_alpha", y="mean_test_score_norm", ax=axs[1])
-#         axs[0].set_xlim(-0.02,best_alpha+0.1)
-#         axs[0].set_ylim(0.8,1.05)
-#         axs[0].axvline(0.008)
-#         axs[0].axhline(performance_CUTOFF)
-#         plt.tight_layout()
-#         plt.show()
-#     return best_alpha
+    Parameters:
+    - gsdf: DataFrame containing the GridSearchCV results
+    - performance_CUTOFF: The threshold to determine the acceptable performance range
+    - plot: Whether to plot the results (default is True)
     
+    Returns:
+    - best_n_estimators: The best number of components based on the performance criteria
+    """
+    
+    # Normalize the mean test score
+    gsdf["mean_test_score_norm"] = NormalizeData(gsdf["mean_test_score"])
+    print("P&P normalized...")
+
+    # Calculate the difference between normalized scores and the performance cutoff
+    gsdf["mean_test_score_norm_minus_cutoff"] = gsdf["mean_test_score_norm"] - performance_CUTOFF
+    print("P&P cutoff applied...")
+
+    # Get the absolute difference for comparison
+    gsdf["mean_test_score_norm_minus_cutoff_abs"] = np.abs(gsdf["mean_test_score_norm_minus_cutoff"])
+    print("P&P calculating absolute differences...")
+
+    # Calculate the derivative of performance by number of components
+    x = gsdf.param_n_estimators.to_numpy()
+    y = gsdf.mean_test_score_norm.to_numpy()
+    dx = np.diff(x).mean()  # Step size based on the range of n_estimators
+    gsdf["derivative"] = np.gradient(y, dx)
+    print("P&P derivative calculated...")
+
+    # Find the number of components with a negative derivative and closest to the performance cutoff
+    tmp = gsdf.loc[gsdf.derivative < 0]
+    if len(tmp) != 0:
+        best_n_estimators = list(tmp.loc[tmp.mean_test_score_norm_minus_cutoff_abs == np.min(tmp.mean_test_score_norm_minus_cutoff_abs)].param_n_estimators)[-1]
+    else:
+        print('No component count with negative derivative, selecting closest to cutoff.')
+        tmp2 = gsdf
+        best_n_estimators = list(tmp2.loc[tmp2.mean_test_score_norm_minus_cutoff_abs == np.min(tmp2.mean_test_score_norm_minus_cutoff_abs)].param_n_estimators)[0]
+    
+    # Plot the results
+    if plot:
+        fig, axs = plt.subplots(1, 2, figsize=(7, 3))
+
+        # Plot normalized test score vs number of components
+        sns.scatterplot(data=gsdf, x="param_n_estimators", y="mean_test_score_norm", ax=axs[0])
+        sns.scatterplot(data=gsdf.loc[gsdf.param_n_estimators == best_n_estimators], x="param_n_estimators", y="mean_test_score_norm", ax=axs[0])
+
+        sns.scatterplot(data=gsdf, x="param_n_estimators", y="mean_test_score_norm", ax=axs[1])
+        sns.scatterplot(data=gsdf.loc[gsdf.param_n_estimators == best_n_estimators], x="param_n_estimators", y="mean_test_score_norm", ax=axs[1])
+
+        axs[0].set_xlim(-0.02, best_n_estimators + 0.1)
+        axs[0].set_ylim(0.8, 1.05)
+        axs[0].axvline(best_n_estimators, color="red", linestyle="--")
+        axs[0].axhline(performance_CUTOFF, color="blue", linestyle="--")
+
+        plt.tight_layout()
+        plt.show()
+
+    return best_n_estimators
+
     
 def NormalizeData(data):
     return (data - np.min(data)) / (np.max(data) - np.min(data))
@@ -172,18 +208,17 @@ if __name__ == "__main__":
     agerange="HC"
     performance_CUTOFF=0.95
     norm="Zprot_perf"+str(int(performance_CUTOFF*100))
-    train_cohort="gtexV8"
+    train_cohort="gtexv10"
 
     gene_sort_crit = sys.argv[1]
     n_bs = sys.argv[2]
     split_id = sys.argv[3]
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
         print ("Invalid gene sort criteria")
         exit (1)
         
     def df_prot_train (tissue):
-        return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
-        # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
+        return pd.read_csv(filepath_or_buffer="proc/proc_datav10/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
 
     from md_age_ordering import return_md_hot
     md_hot_train = return_md_hot()
@@ -196,7 +231,7 @@ if __name__ == "__main__":
                                         df_prot_train, #protein expression dataframe returning method (by tissue)
                                         bs_seed_list, #bootstrap seeds
                                         performance_CUTOFF=performance_CUTOFF, #heuristic for model simplification
-                                        NPOOL=15, #parallelize
+                                        NPOOL=1, #parallelize
                                         
                                         train_cohort=train_cohort, #these three variables for file naming
                                         norm=norm, 

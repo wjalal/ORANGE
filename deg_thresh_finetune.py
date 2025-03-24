@@ -35,8 +35,7 @@ fine_tune_tissues = {
 }
 
 def df_prot_train (tissue):
-    return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corrdeg" + "/"+tissue+".TRAIN.cmn" + split_id + ".tsv", sep='\s+').set_index("Name")
-    # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
+    return pd.read_csv(filepath_or_buffer="proc/proc_datav10/reduced/corrdeg" + "/"+tissue+".TRAIN.cmn" + split_id + ".tsv", sep='\s+').set_index("Name")
 
 from md_age_ordering import return_md_hot
 md_hot_train = return_md_hot()
@@ -54,8 +53,8 @@ for s_organ in fine_tune_tissues.keys():
         Train_tissue_aging_model_pls (
             s_organ, md_hot_train, df_prot_train,
             bs_seed_list, 
-            0.95, "gtexV8",
-            "Zprot_perf"+str(int(0.95*100)), "HC", n_bs, f"cmn{split_id}", NPOOL=15
+            0.95, "gtexv10",
+            "Zprot_perf"+str(int(0.95*100)), "HC", n_bs, f"cmn{split_id}", NPOOL=1
         )
         print("Testing on threshold =", threshold)
         sys.argv = ['test_gtex_train.py', 'deg', '20', f"cmn{split_id}", "pls"]

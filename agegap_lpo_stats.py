@@ -42,18 +42,16 @@ if int(n_bs) > 500:
 
 tissues = [
     "liver",
-    "artery_aorta",
+    "colon_sigmoid",
+    "skin_sun_exposed_lower_leg",
+    "adipose_subcutaneous",
     "artery_coronary",
+    "artery_aorta",
     "brain_cortex",
     "brain_cerebellum",
-    # "adrenal_gland",
     "heart_atrial_appendage",
-    # "pituitary",
-    "adipose_subcutaneous",
     "lung",
-    "skin_sun_exposed_lower_leg",
     "nerve_tibial",
-    "colon_sigmoid",
     "pancreas",
 #    "breast_mammary_tissue",
 #    "prostate",
@@ -103,7 +101,7 @@ for s in range (int(split_id_r1), int(split_id_r2)+1):
 
         # Set the minimum number of non-null columns required per row
     # min_non_null_columns = int(len(tissues)/2)
-    min_non_null_columns = 5
+    min_non_null_columns = 6
     # Filter rows with at least 6 non-null values
     all_tissue_res = all_tissue_res.dropna(thresh=min_non_null_columns+len(exclude_cols))
     # print (all_tissue_res.shape)
@@ -117,8 +115,8 @@ for s in range (int(split_id_r1), int(split_id_r2)+1):
 
 # Concatenate along a new axis and compute cell-wise mean and standard deviation
 concat_df = pd.concat(agegap_matrices, axis=0, keys=range(len(agegap_matrices)))
-concat_df.to_csv("gtex_outputs/idk.tsv", sep='\t', index=True)
-print(concat_df)
+# concat_df.to_csv("gtex_outputs/idk.tsv", sep='\t', index=True)
+# print(concat_df)
 # Calculate the mean and standard deviation, ignoring NaNs
 mean_df = concat_df.groupby(level=1).mean()
 mean_df['non_null_count'] = mean_df.count(axis=1)
@@ -181,7 +179,7 @@ extreme_denoised = extreme_denoised.rename(columns={
     "heart_atrial_appendage": "heart", 
     "skin_sun_exposed_lower_leg": "skin_sun_exposed"
 })
-print (f"extreme denoised: {extreme_denoised.shape}")
+# print (f"extreme denoised: {extreme_denoised.shape}")
 ageotype_avg_agegaps.columns = ageotype_avg_agegaps.columns.str.slice(7)
 ageotype_avg_agegaps = ageotype_avg_agegaps.rename(columns={
     "heart_atrial_appendage": "heart", 
@@ -225,7 +223,7 @@ non_extreme_denoised = non_extreme_denoised.rename(columns={
 })
 print (f"non-extreme denoised: {non_extreme_denoised.shape}")
 full_denoised = pd.concat([non_extreme_denoised, extreme_denoised])
-print (full_denoised)
+# print (full_denoised)
 
 # Heatmap of full_denoised
 import matplotlib.patches as patches
@@ -242,7 +240,7 @@ ax = sns.heatmap(
     yticklabels=False,  # Suppress default row labels
     square=True
 )
-ax.set_aspect(0.02)  # Compress the height (smaller values = flatter rows)
+ax.set_aspect(0.0235)  # Compress the height (smaller values = flatter rows)
 
 def add_curly_brace(ax, y_start, y_end, x_position, label, bulge=0.5, fontsize=6):
     """Add a curly brace to indicate a section in the heatmap."""
@@ -303,7 +301,7 @@ plt.xlabel("Avg. tissue age-gaps", fontsize=8)
 plt.ylabel("Subject ageotypes", fontsize=8)
 # Save the heatmap
 plt.tight_layout()
-plt.savefig(f"gtex_outputs/ageotype_avg_agegap__{regr}_{split_id_r1}-{split_id_r2}.png", dpi=300, bbox_inches="tight")
+plt.savefig(f"gtex_outputs/ageotype_avg_agegap_{regr}_{split_id_r1}-{split_id_r2}.png", dpi=300, bbox_inches="tight")
 
 
 rows_with_one_extreme_value = mean_df[((mean_df > 2) | (mean_df < -2)).sum(axis=1) == 1]
@@ -311,12 +309,25 @@ print(rows_with_one_extreme_value)
 
 # Save the original index of rows_with_extreme_values
 original_index = rows_with_extreme_values.index
-multi_extreme_rows = rows_with_extreme_values.merge(rows_with_one_extreme_value, how='outer', indicator=True).query('_merge == "left_only"').drop('_merge', axis=1)
-multi_extreme_rows = multi_extreme_rows[((multi_extreme_rows > 2) | (multi_extreme_rows < -2)).sum(axis=1) >= 3]
+# multi_extreme_rows = rows_with_extreme_values.merge(rows_with_one_extreme_value, how='outer', indicator=True).query('_merge == "left_only"').drop('_merge', axis=1)
+multi_extreme_rows = mean_df[((mean_df > 2) | (mean_df < -2)).sum(axis=1) >= 3]
 # Reassign the original index
-multi_extreme_rows.index = original_index[multi_extreme_rows.index]
+# multi_extreme_rows.index = original_index[multi_extreme_rows.index]
 print(multi_extreme_rows)
-multi_extreme_rows.index.to_series().to_csv(f"gtex_outputs/multi_extreme_agers.csv", header=False, index=False)
+multi_extreme_rows.index.to_series().to_csv(f"gtex_outputs/multi_extreme_agers_{regr}_{split_id_r1}-{split_id_r2}.csv", header=False, index=False)
+
+
+mean_extreme_row = multi_extreme_rows.abs().mean(axis=0)  # Row-wise mean
+mean_extreme_row.name = "multi-agers"    # Set index name for the row
+mean_extreme_row.index = mean_extreme_row.index.str.slice(7)
+mean_extreme_row = mean_extreme_row.rename(index={
+    "heart_atrial_appendage": "heart", 
+    "skin_sun_exposed_lower_leg": "skin_sun_exp"
+})
+ageotype_avg_agegaps = pd.concat([ageotype_avg_agegaps, mean_extreme_row.to_frame().T])
+print (ageotype_avg_agegaps)
+ageotype_avg_agegaps.to_csv(f"gtex_outputs/ageotype_avg_agegaps_{regr}_{split_id_r1}-{split_id_r2}.csv", header=True, index=True)
+
 
 mdf = mean_df.copy()
 mdf.columns = mdf.columns.str.slice(7)
@@ -324,7 +335,7 @@ mdf.columns = mdf.columns.str.slice(7)
 corr_matrix = mdf.corr(min_periods=1)
 # Step 2: Calculate the pairwise count of non-null values
 count_matrix = mdf.notnull().T.dot(mdf.notnull())
-print(count_matrix)
+# print(count_matrix)
 mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=1)
 
 # Step 3: Weight correlations by count and calculate the weighted average
@@ -355,7 +366,7 @@ cbar = ax.collections[0].colorbar
 cbar.ax.tick_params(labelsize=4)  # Set colorbar tick font size
 plt.tight_layout()  # Ensures no padding
 plt.savefig(
-    f"gtex_outputs/agegap_{regr}_correlation_heatmap_cmn{split_id_r1}-{split_id_r2}.png",
+    f"gtex_outputs/agegap_{regr}_correlation_heatmap_cl1sp{split_id_r1}-{split_id_r2}.png",
     format="png",
     dpi=300,
     bbox_inches="tight"
@@ -386,18 +397,19 @@ print ("multi-sel")
 
 # sampled_mx_rows = multi_extreme_rows.head(6)
 
-sampled_mx_rows = mean_df.loc[['GTEX-1E2YA', 'GTEX-11EMC', 'GTEX-145MO', 'GTEX-1RAZQ', 'GTEX-1A8FM']]
+sampled_mx_rows = mean_df.loc[['GTEX-1HB9E', 'GTEX-1AX9K', 'GTEX-145MO', 'GTEX-1A8FM', 'GTEX-1H3NZ']]
 
 sampled_mx_rows.columns = sampled_mx_rows.columns.str.slice(7)
 sampled_mx_rows = sampled_mx_rows.rename({
-    'GTEX-1E2YA' : 'GTEX-1E2YA\n(brain ager)', 
-    'GTEX-11EMC' : 'GTEX-11EMC\n(lung ager)', 
+    'GTEX-1HB9E' : 'GTEX-1HB9E\n(brain ager)', 
+    'GTEX-1AX9K' : 'GTEX-1AX9K\n(lung ager)', 
     'GTEX-145MO' : 'GTEX-145MO\n(pancreas ager)', 
-    'GTEX-1RAZQ' : 'GTEX-1RAZQ\n(multi-organ ager)', 
-    'GTEX-1A8FM' : 'GTEX-1A8FM\n(multi-organ ager)',
+    'GTEX-1A8FM'  : 'GTEX-1A8FM\n(multi-organ ager)', 
+    'GTEX-1H3NZ' : 'GTEX-1H3NZ\n(multi-organ ager)',
 })
 
-
+print ("SAMPEL MX ROWS")
+print (sampled_mx_rows)
 # Create a subplot with 1 row and 2 columns (shared axes for y)
 fig, ax = plt.subplots(1, 2, figsize=(6, 4), sharey=True)
 
@@ -472,10 +484,10 @@ plt.subplots_adjust(wspace=0.1, right=0.85)  # Adjust the width space and right 
 
 # Adjust layout and save the combined figure
 plt.tight_layout()
-plt.savefig(f"gtex_outputs/{regr}_cmn_{split_id_r1}_{split_id_r2}_combined_ager_examples.png", format="png", dpi=300, bbox_inches="tight")
+plt.savefig(f"gtex_outputs/{regr}_cl1sp_{split_id_r1}_{split_id_r2}_combined_ager_examples.png", format="png", dpi=300, bbox_inches="tight")
 
-
-
+mean_df['min_agegap'] = mean_df[subset_cols].min(axis=1)
+mean_df['max_agegap'] = mean_df[subset_cols].max(axis=1)
 mean_df[['AGE', 'SEX', 'DTHHRDY']] = pheno_data[['AGE', 'SEX', 'DTHHRDY']]
 if regr == "pls":
     mean_df.to_csv("gtex_outputs/bs_agegaps_zscpred_pls_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id_r1 + "-" + split_id_r2 + agg + ".tsv", sep='\t', index=True)

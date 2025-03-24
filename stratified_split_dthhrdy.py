@@ -5,19 +5,20 @@ from sklearn.model_selection import train_test_split
 
 gene_sort_crit = sys.argv[1]
 rand_seed = sys.argv[2]
-if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
     print ("Invalid args")
     exit (1)
 
 with open('gtex/organ_list.dat', 'r') as file:
     organ_list = [line.strip() for line in file]
 
-md_hot = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid_int.txt", sep='\s+').set_index("SUBJID")
+from md_age_ordering import return_md_hot
+md_hot = return_md_hot()
 md_hot['DTHHRDY'] = md_hot['DTHHRDY'].fillna(0)
 
 for organ in organ_list:
     print(organ)
-    df_gene = pd.read_csv("../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + organ + ".tsv", sep='\s+').set_index("Name")
+    df_gene = pd.read_csv("proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + organ + ".tsv", sep='\s+').set_index("Name")
     # print (df_gene)
     df_gene.index.names = ['SUBJID']
     md_hot_organ = md_hot.merge(right = df_gene.index.to_series(), how='inner', left_index=True, right_index=True)
@@ -38,5 +39,5 @@ for organ in organ_list:
     print(df_gene_test.shape)
 
 
-    df_gene_train.to_csv("../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + organ + ".TRAIN.cl1sp" + rand_seed + ".tsv", sep='\t', index=True)
-    df_gene_test.to_csv("../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + organ + ".TEST.cl1sp" + rand_seed + ".tsv", sep='\t', index=True)
+    df_gene_train.to_csv("proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + organ + ".TRAIN.cl1sp" + rand_seed + ".tsv", sep='\t', index=True)
+    df_gene_test.to_csv("proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + organ + ".TEST.cl1sp" + rand_seed + ".tsv", sep='\t', index=True)

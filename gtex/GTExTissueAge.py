@@ -47,8 +47,8 @@ class CreateGTExTissueAgeObject:
             models_dict[organ] = {}
             models_dict[organ]["aging_model"] = {}
             # load protein zscore scaler
-            fn_protein_scaler = 'gtexV8_HC_based_'+organ+'_gene_zscore_scaler.pkl'
-            loaded_model = pickle.loads(resources.read_binary('gtex.train_no_bs.data.ml_models.gtexV8.HC.'+norm+'.' + organ, fn_protein_scaler))
+            fn_protein_scaler = 'gtexv10_HC_based_'+organ+'_gene_zscore_scaler.pkl'
+            loaded_model = pickle.loads(resources.read_binary('gtex.train_no_bs.data.ml_models.gtexv10.HC.'+norm+'.' + organ, fn_protein_scaler))
             models_dict[organ]["prot_scaler"] = loaded_model
 
             # # age gap zscore scaler
@@ -62,7 +62,7 @@ class CreateGTExTissueAgeObject:
             # models_dict[organ]["age_prediction_lowess"] = loaded_model
 
             # load all aging models
-            fn_aging_model = 'gtexV8_HC_'+norm+'_lasso_'+organ+'_aging_model.pkl'
+            fn_aging_model = 'gtexv10_HC_'+norm+'_lasso_'+organ+'_aging_model.pkl'
             loaded_model = pickle.loads(resources.read_binary('gtex.train_no_bs.data.ml_models.gtexV8.HC.'+norm+'.'+ organ, fn_aging_model))
             models_dict[organ]["aging_model"] = loaded_model
 

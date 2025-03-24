@@ -189,12 +189,12 @@ if __name__ == "__main__":
     agerange="HC"
     performance_CUTOFF=0.95
     norm="Zprot_perf"+str(int(performance_CUTOFF*100))
-    train_cohort="gtexV8"
+    train_cohort="gtexv10"
 
     gene_sort_crit = sys.argv[1]
     n_bs = sys.argv[2]
     split_id = sys.argv[3]
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
         print ("Invalid gene sort criteria")
         exit (1)
     if int(n_bs) > 500:
@@ -202,8 +202,7 @@ if __name__ == "__main__":
         exit (1)
 
     def df_prot_train (tissue):
-        return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
-        # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
+        return pd.read_csv(filepath_or_buffer="proc/proc_datav10/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
 
     from md_age_ordering import return_md_hot
     md_hot_train = return_md_hot()

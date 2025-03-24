@@ -3,7 +3,7 @@ import math
 import sys
 
 gene_sort_crit = sys.argv[1]
-if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
     print ("Invalid args")
     exit (1)
     
@@ -11,11 +11,12 @@ if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'd
 with open('gtex/organ_list.dat', 'r') as file:
     organ_list = [line.strip() for line in file]
 
-md_hot = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid_int.txt", sep='\s+').set_index("SUBJID")
+from md_age_ordering import return_md_hot
+md_hot = return_md_hot()
 
 for organ in organ_list:
     print(organ)
-    df_gene = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/" + organ + ".tsv", sep='\s+').set_index("Name")
+    df_gene = pd.read_csv(filepath_or_buffer="proc/proc_datav10/" + organ + ".tsv", sep='\s+').set_index("Name")
     # print (df_gene)
     df_gene.index.names = ['SUBJID']
     md_hot_organ = md_hot.merge(right = df_gene.index.to_series(), how='inner', left_index=True, right_index=True)
@@ -33,4 +34,4 @@ for organ in organ_list:
     df_gene = df_gene[corr.keys().to_list()]
     df_gene.index.names = ['Name']
     # print (df_gene)
-    df_gene.to_csv("../../../gtex/proc/proc_data/reduced/cringe/corr" + gene_sort_crit + "/" + organ + ".tsv", sep='\t', index=True)
+    df_gene.to_csv("proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + organ + ".tsv", sep='\t', index=True)

@@ -21,7 +21,7 @@ def to_ternary(n):
 agerange="HC"
 performance_CUTOFF=0.95
 norm="Zprot_perf"+str(int(performance_CUTOFF*100))
-train_cohort="gtexV8"
+train_cohort="gtexv10"
 
 gene_sort_crit = sys.argv[1]
 n_bs = sys.argv[2]
@@ -29,7 +29,7 @@ split_id_r = sys.argv[3]
 split_id = "cl1sp" + str(split_id_r)
 regr = sys.argv[4]
 
-if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
     print ("Invalid gene sort criteria")
     exit (1)
 if int(n_bs) > 500:
@@ -37,11 +37,10 @@ if int(n_bs) > 500:
     exit (1)
 
 def df_prot_train (tissue):
-    return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
-    # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
+    return pd.read_csv(filepath_or_buffer="proc/proc_datav10/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
 
 
-md_hot_train = pd.read_csv(filepath_or_buffer="../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS-rangemid_int.txt", sep='\s+').set_index("SUBJID")
+md_hot_train = pd.read_csv(filepath_or_buffer="proc/GTEx_Analysis_v10_Annotations_SubjectPhenotypesDS-rangemid_int.txt", sep='\s+').set_index("SUBJID")
 md_hot_train['AGE'] = md_hot_train['AGE'].astype(float)
 bs_seed_list = json.load(open("gtex/Bootstrap_and_permutation_500_seed_dict_500.json"))
 

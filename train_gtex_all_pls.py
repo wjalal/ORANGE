@@ -143,20 +143,39 @@ def Train_all_tissue_aging_model_pls(md_hot_train, df_prot_train,
     return dfcoef
   
     
+# tissue_comp_rate = {
+#     'liver': 0.05,
+#     'artery_aorta': 0.09,
+#     'artery_coronary': 0.02,
+#     'brain_cortex': 0.01,
+#     'brain_cerebellum': 0.01,
+#     'adrenal_gland': 0.01,
+#     'heart_atrial_appendage': 0.09,
+#     'pituitary': 0.01,
+#     'adipose_subcutaneous': 0.1,
+#     'lung': 0.01,
+#     'skin_sun_exposed_lower_leg': 0.02,
+#     'nerve_tibial': 0.01,
+#     'colon_sigmoid': 0.01,
+#     'pancreas': 0.09,
+#     # 'breast_mammary_tissue': 0.01,
+#     # 'prostate': 0.05,
+# }
+
 tissue_comp_rate = {
-    'liver': 0.05,
-    'artery_aorta': 0.09,
+    'liver': 0.02,
+    'artery_aorta': 0.10,
     'artery_coronary': 0.02,
     'brain_cortex': 0.01,
-    'brain_cerebellum': 0.01,
+    'brain_cerebellum': 0.003,
     'adrenal_gland': 0.01,
-    'heart_atrial_appendage': 0.02,
+    'heart_atrial_appendage': 0.035,
     'pituitary': 0.01,
-    'adipose_subcutaneous': 0.1,
+    'adipose_subcutaneous': 0.10,
     'lung': 0.01,
     'skin_sun_exposed_lower_leg': 0.02,
     'nerve_tibial': 0.01,
-    'colon_sigmoid': 0.01,
+    'colon_sigmoid': 0.035,
     'pancreas': 0.09,
     # 'breast_mammary_tissue': 0.01,
     # 'prostate': 0.05,
@@ -175,8 +194,11 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     print("starting PLS regression... (seed = ", seed, ")")
     pls = PLSRegression(max_iter=5000, n_components=int(tissue_comp_rate[tissue]*df_X_train.shape[1]))
     
+
+
+
     # # Defining range of components to try in grid search
-    # components = np.rint(np.linspace (0.01*df_X_train.shape[1], 0.15*df_X_train.shape[1], 15)).astype(int)  # limiting to a max of 20 components or fewer
+    # components = np.rint(np.linspace (0.001*df_X_train.shape[1], 0.02*df_X_train.shape[1], 50)).astype(int)  # limiting to a max of 20 components or fewer
     # print (components) 
     # tuned_parameters = [{'n_components': components}]
     # n_folds = 4
@@ -195,8 +217,12 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     # best_n_components = Plot_and_pick_n_components(gsdf, performance_CUTOFF, plot=False)  # Pick best component count
     # print("Plot and Pick done... (seed = ", seed, ")")
     
+
     # # Retrain with best parameters
     # pls = PLSRegression(n_components=best_n_components, max_iter=5000)
+
+
+
 
     pls.fit(X_train_sample, Y_train_sample)
     print("PLS regression retrained... (seed = ", seed, ")")
@@ -282,12 +308,12 @@ def main():
     agerange="HC"
     performance_CUTOFF=0.95
     norm="Zprot_perf"+str(int(performance_CUTOFF*100))
-    train_cohort="gtexV8"
+    train_cohort="gtexv10"
 
     gene_sort_crit = sys.argv[1]
     n_bs = sys.argv[2]
     split_id = sys.argv[3]
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
         print ("Invalid gene sort criteria")
         exit (1)
     if int(n_bs) > 500:
@@ -295,8 +321,7 @@ def main():
         exit (1)
 
     def df_prot_train (tissue):
-        return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
-        # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
+        return pd.read_csv(filepath_or_buffer="proc/proc_datav10/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
 
     from md_age_ordering import return_md_hot
     md_hot_train = return_md_hot()
@@ -308,7 +333,7 @@ def main():
     dfcoef = Train_all_tissue_aging_model_pls(md_hot_train, #meta data dataframe with age and sex (binary) as columns
                                         df_prot_train, #protein expression dataframe returning method (by tissue)
                                         bs_seed_list, #bootstrap seeds
-                                        performance_CUTOFF=performance_CUTOFF, #heuristic for model simplification
+                                        performance_CUTOFF=0.99, #heuristic for model simplification
                                         NPOOL=1, #parallelize
                                         
                                         train_cohort=train_cohort, #these three variables for file naming

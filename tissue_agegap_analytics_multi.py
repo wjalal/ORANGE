@@ -67,14 +67,14 @@ def analyse_tissue_agegaps(sp_st, split_id_r1, split_id_r2, n_bs, gene_sort_crit
                     models_dict[organ]["aging_models"] = []
 
                     # load protein zscore scaler
-                    fn_protein_scaler = 'gtexV8_HC_based_'+organ+'_gene_zscore_scaler.pkl'
-                    with open('gtex/train_splits/train_bs' + n_bs + '_' + split_id + '/data/ml_models/gtexV8/HC/'+norm+'/'+organ+"/"+fn_protein_scaler, 'rb') as f_scaler:
+                    fn_protein_scaler = 'gtexv10_HC_based_'+organ+'_gene_zscore_scaler.pkl'
+                    with open('gtex/train_splits/train_bs' + n_bs + '_' + split_id + '/data/ml_models/gtexv10/HC/'+norm+'/'+organ+"/"+fn_protein_scaler, 'rb') as f_scaler:
                         loaded_model = pickle.load(f_scaler)
                         models_dict[organ]["prot_scaler"] = loaded_model
 
                     for seed in bootstrap_seeds:
-                        fn_aging_model = 'gtexV8_HC_'+norm+'_'+regr+'_'+organ+'_seed'+str(seed)+'_aging_model.pkl'
-                        with open('gtex/train_splits/train_bs' + n_bs + '_' + split_id + '/data/ml_models/gtexV8/HC/'+norm+'/'+organ+"/"+fn_aging_model, 'rb') as f_model:
+                        fn_aging_model = 'gtexv10_HC_'+norm+'_'+regr+'_'+organ+'_seed'+str(seed)+'_aging_model.pkl'
+                        with open('gtex/train_splits/train_bs' + n_bs + '_' + split_id + '/data/ml_models/gtexv10/HC/'+norm+'/'+organ+"/"+fn_aging_model, 'rb') as f_model:
                             loaded_model = pickle.load(f_model)
                             models_dict[organ]["aging_models"].append(loaded_model)
 
@@ -142,7 +142,7 @@ def analyse_tissue_agegaps(sp_st, split_id_r1, split_id_r2, n_bs, gene_sort_crit
         def test_OrganAge (tissue):
             print ("Testing on trained model")
             data = CreateGTExTissueAgeObject(tissue)
-            df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + tissue + ".TEST." + split_id + ".tsv", sep='\s+').set_index("Name")
+            df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + tissue + ".TEST." + split_id + ".tsv", sep='\s+').set_index("Name")
             df_prot.index.names = ['SUBJID']
             md_hot_tissue = md_hot.merge(right = df_prot.index.to_series(), how='inner', left_index=True, right_index=True)
             # print(md_hot_tissue)
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     split_id_r2 = sys.argv[5]
     regr = sys.argv[6]
 
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
         print ("Invalid gene sort criteria")
         exit (1)
     if int(n_bs) > 500:

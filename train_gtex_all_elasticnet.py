@@ -49,6 +49,76 @@ def Train_tissue_aging_model_elasticnet (tissue, md_hot_train, df_prot_train,
     df_prot_train_tissue.index.names = ['SUBJID']
     md_hot_train_tissue = md_hot_train.merge(right = df_prot_train_tissue.index.to_series(), how='inner', left_index=True, right_index=True)
 
+    #####################################################################
+    # plot_Y = md_hot_train_tissue.sample(n=100, random_state=42).sort_values(by="AGE")
+    # plot_X = df_prot_train_tissue.loc[plot_Y.index].iloc[:, :20]
+    # plot_S = plot_Y.loc[plot_Y.index][["SEX"]]
+    # plot_Y = plot_Y.loc[plot_Y.index][["AGE"]]
+
+    # # Determine dimensions for square heatmap
+    # num_rows, num_cols = plot_X.shape
+    # aspect_ratio = num_cols / num_rows
+
+    # # Set up the figure and axes
+    # fig, ax = plt.subplots(
+    #     ncols=3, 
+    #     figsize=(4.75, 4),  # General figure size
+    #     gridspec_kw={"width_ratios": [1, 20, 1], "wspace": 0}  # Narrow gap between subplots
+    # )
+
+    # # Plot the heatmap for plot_Y
+    # sns.heatmap(
+    #     plot_S,
+    #     ax=ax[0],
+    #     cmap="bwr",
+    #     cbar=False,
+    #     xticklabels=False,
+    #     yticklabels=False,
+    #     square=True  # Ensure cells are square
+    # )
+    # # ax[1].set_aspect("equal")  # Force square cells
+    # ax[0].set_aspect(aspect_ratio)
+    # ax[0].xaxis.set_label_position('top')  # Move x-axis label to the top
+    # ax[0].set_xlabel("Sex", fontsize=14)
+    # ax[0].set_ylabel("Subjects", fontsize=14)  # Remove y-axis label
+
+    # # Plot the heatmap for plot_X
+    # sns.heatmap(
+    #     plot_X,
+    #     ax=ax[1],
+    #     cmap="coolwarm",
+    #     cbar=False,
+    #     xticklabels=False,  # Remove column labels
+    #     yticklabels=False,
+    #     square=True  # Ensure cells are square
+    # )
+    # ax[1].set_aspect(aspect_ratio)  # Force square cells
+    # ax[1].xaxis.set_label_position('top')  # Move x-axis label to the top
+    # ax[1].set_xlabel("Genes", fontsize=14)
+    # ax[1].set_ylabel("")
+
+    # # Plot the heatmap for plot_Y
+    # sns.heatmap(
+    #     plot_Y,
+    #     ax=ax[2],
+    #     cmap="PuBu",
+    #     cbar=False,
+    #     xticklabels=False,
+    #     yticklabels=False,
+    #     square=True  # Ensure cells are square
+    # )
+    # # ax[1].set_aspect("equal")  # Force square cells
+    # ax[2].set_aspect(aspect_ratio)
+    # ax[2].xaxis.set_label_position('top')  # Move x-axis label to the top
+    # ax[2].set_xlabel("Age", fontsize=14)
+    # ax[2].set_ylabel("")  # Remove y-axis label
+
+    # plt.tight_layout()
+    # plt.show()
+    # plt.close()
+    ##################################################################################
+
+
     # zscore
     # scaler = MinMaxScaler(feature_range = (0,1))
     # scaler = RobustScaler()
@@ -104,6 +174,60 @@ def Train_tissue_aging_model_elasticnet (tissue, md_hot_train, df_prot_train,
     # print (X_synth)
     # print (y_synth)
 
+
+    ##############################################################3
+    # Ensure AGE is sorted and reindex both dataframes
+    plot_Y = df_Y_train.sample(n=100, random_state=42).sort_values(by="AGE")
+    plot_X = df_X_train.loc[plot_Y.index].iloc[:, :20]
+    plot_Y = plot_Y.loc[plot_Y.index][["AGE"]]
+
+    # Determine dimensions for square heatmap
+    num_rows, num_cols = plot_X.shape
+    aspect_ratio = num_cols / num_rows
+
+    # Set up the figure and axes
+    fig, ax = plt.subplots(
+        ncols=2, 
+        figsize=(4.5, 4),  # General figure size
+        gridspec_kw={"width_ratios": [20, 1], "wspace": 0}  # Narrow gap between subplots
+    )
+
+    # Plot the heatmap for plot_X
+    sns.heatmap(
+        plot_X,
+        ax=ax[0],
+        cmap="RdBu",
+        cbar=False,
+        xticklabels=False,  # Remove column labels
+        yticklabels=False,
+        square=True  # Ensure cells are square
+    )
+    ax[0].set_aspect(aspect_ratio)  # Force square cells
+    ax[0].xaxis.set_label_position('top')  # Move x-axis label to the top
+    ax[0].set_xlabel("Sex, Genes", fontsize=14)
+    ax[0].set_ylabel("Subjects", fontsize=14)
+
+    # Plot the heatmap for plot_Y
+    sns.heatmap(
+        plot_Y,
+        ax=ax[1],
+        cmap="PuBu",
+        cbar=False,
+        xticklabels=False,
+        yticklabels=False,
+        square=True  # Ensure cells are square
+    )
+    # ax[1].set_aspect("equal")  # Force square cells
+    ax[1].set_aspect(aspect_ratio)
+    ax[1].xaxis.set_label_position('top')  # Move x-axis label to the top
+    ax[1].set_xlabel("Age", fontsize=14)
+    ax[1].set_ylabel("")  # Remove y-axis label
+
+    plt.tight_layout()
+    # plt.show()
+    # plt.close()
+    ############################################################
+
     # Bootstrap training
     print ("starting bootstrap training...")
     pool = mp.Pool(NPOOL)
@@ -116,6 +240,9 @@ def Train_tissue_aging_model_elasticnet (tissue, md_hot_train, df_prot_train,
     pool.close()
     pool.join()
     coef_list = pd.concat(coef_list, axis=1).mean(axis=1).abs().sort_values(ascending=False)
+
+
+
     return coef_list          
 
 def Train_all_tissue_aging_model_elasticnet(md_hot_train, df_prot_train,
@@ -180,11 +307,44 @@ def Bootstrap_train(df_X_train, df_Y_train, train_cohort,
     coef_list = lasso.coef_.flatten() # You can adjust this if more details are needed
     coefficients_df = pd.Series(coef_list, index=df_X_train.columns)
     print (coefficients_df)
+
+    ##############################################################3
+    # Determine dimensions for square heatmap
+    # num_rows, num_cols = coefficients_df.shape[0], 1
+    # aspect_ratio = num_cols / num_rows
+
+    # # Set up the figure and axes
+    # fig, ax = plt.subplots(
+    #     ncols=1, 
+    #     figsize=(4, 4),  # General figure size
+    #     gridspec_kw={"width_ratios": [1], "wspace": 0}  # Narrow gap between subplots
+    # )
+
+    # # Plot the heatmap for plot_X
+    # sns.heatmap(
+    #     coefficients_df,
+    #     ax=ax[0],
+    #     cmap="RdBu",
+    #     cbar=False,
+    #     xticklabels=False,  # Remove column labels
+    #     yticklabels=False,
+    #     square=True  # Ensure cells are square
+    # )
+    # ax[0].set_aspect(aspect_ratio)  # Force square cells
+    # ax[0].xaxis.set_label_position('top')  # Move x-axis label to the top
+    # ax[0].set_xlabel("Sex, Genes", fontsize=14)
+    # ax[0].set_ylabel("Weights", fontsize=14)
+
+    # plt.tight_layout()
+    # plt.show()
+    # plt.close()
+    ############################################################
+
     return coefficients_df
     
 
 
-def Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=True):
+def Plot_and_pick_alpha(gsdf, performance_CUTOFF, plot=False):
     
     #pick alpha at 90-95% top performance, negative derivative (higher alpha)
     gsdf["mean_test_score_norm"] = NormalizeData(gsdf["mean_test_score"])
@@ -231,12 +391,12 @@ if __name__ == "__main__":
     agerange="HC"
     performance_CUTOFF=0.95
     norm="Zprot_perf"+str(int(performance_CUTOFF*100))
-    train_cohort="gtexV8"
+    train_cohort="gtexv10"
 
     gene_sort_crit = sys.argv[1]
     n_bs = sys.argv[2]
     split_id = sys.argv[3]
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
         print ("Invalid gene sort criteria")
         exit (1)
     if int(n_bs) > 500:
@@ -244,8 +404,7 @@ if __name__ == "__main__":
         exit (1)
 
     def df_prot_train (tissue):
-        return pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
-        # return pd.read_csv(filepath_or_buffer="../../../gtex/gtexv8_coronary_artery_TRAIN.tsv", sep='\s+').set_index("Name")
+        return pd.read_csv(filepath_or_buffer="proc/proc_datav10/reduced/corr" + gene_sort_crit + "/"+tissue+".TRAIN." + split_id + ".tsv", sep='\s+').set_index("Name")
 
     from md_age_ordering import return_md_hot
     md_hot_train = return_md_hot()

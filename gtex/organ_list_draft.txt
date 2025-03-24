@@ -60,3 +60,16 @@ adipose_subcutaneous
 lung
 skin_sun_exposed_lower_leg
 nerve_tibial
+||||||||||||||||||||||||||||||
+liver
+artery_aorta
+artery_coronary
+brain_cortex
+brain_cerebellum
+heart_atrial_appendage
+adipose_subcutaneous
+lung
+skin_sun_exposed_lower_leg
+nerve_tibial
+colon_sigmoid
+pancreas

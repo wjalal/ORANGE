@@ -16,14 +16,16 @@ def main (threshold, s_organ=None, s = False):
 
     for organ in organ_name_list:
 
-        counts_df = pd.read_csv(f'dataCSV/gene_reads_2017-06-05_v8_{organ}.csv')
-        counts_df = counts_df.drop(columns=['id', 'Description']).set_index('Name')
+        # counts_df = pd.read_csv(f'dataCSV/gene_reads_2017-06-05_v8_{organ}.csv')
+        counts_df = pd.read_csv(f'dataCSVv10/gene_reads_v10_{organ}.csv')
+        # counts_df = counts_df.drop(columns=['id', 'Description']).set_index('Name')
+        counts_df = counts_df.drop(columns=['Description']).set_index('Name')
         counts_df = counts_df.T
 
         counts_df['SUBJID'] = counts_df.index.str.split('-').str[0]+'-'+counts_df.index.str.split('-').str[1]
         counts_df = counts_df.set_index('SUBJID')
 
-        metadata = pd.read_csv('../../../gtex/GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS.txt', sep='\t').set_index('SUBJID')
+        metadata = pd.read_csv('proc/GTEx_Analysis_v10_Annotations_SubjectPhenotypesDS.txt', sep='\t').set_index('SUBJID')
         metadata = metadata.loc[metadata.index.intersection(counts_df.index)]
 
         samples_to_keep = ~metadata.AGE.isna()

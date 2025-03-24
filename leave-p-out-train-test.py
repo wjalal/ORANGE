@@ -140,7 +140,7 @@ bs_seed_list = json.load(files("gtex").joinpath("Bootstrap_and_permutation_500_s
 agerange="HC"
 performance_CUTOFF=0.95
 norm="Zprot_perf"+str(int(performance_CUTOFF*100))
-train_cohort="gtexV8"
+train_cohort="gtexv10"
 
 from md_age_ordering import return_md_hot
 md_hot = return_md_hot()
@@ -152,7 +152,7 @@ for organ in organ_list:
     res = pd.DataFrame()
 
     # Load and prepare the data
-    df_gene = pd.read_csv("../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + organ + ".tsv", sep='\s+').set_index("Name")
+    df_gene = pd.read_csv("proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + organ + ".tsv", sep='\s+').set_index("Name")
     df_gene.index.names = ['SUBJID']
     
     # Merge with metadata
@@ -224,7 +224,7 @@ for organ in organ_list:
                     norm=norm, 
                     agerange=agerange, 
                     n_bs=n_bs,
-                    split_id=f"cmn{rand_seed}_{i}",
+                    split_id=f"cl1sp{rand_seed}_{i}",
                 )
             elif regr == "elasticnet":
                 Train_tissue_aging_model_elasticnet (
@@ -238,10 +238,10 @@ for organ in organ_list:
                     norm=norm, 
                     agerange=agerange, 
                     n_bs=n_bs,
-                    split_id=f"cmn{rand_seed}_{i}",
+                    split_id=f"cl1sp{rand_seed}_{i}",
                 )
 
-            sys.argv = ['test_gtex_train.py', '20p', '20', f"cmn{rand_seed}", regr, f"{i}"]
+            sys.argv = ['test_gtex_train.py', gene_sort_crit, n_bs, f"cl1sp{rand_seed}", regr, f"{i}"]
             split_res = test_gtex_train.main(
                 main=False, 
                 md_hot_organ=md_hot.merge(right=X_test.index.to_series(), how='inner', left_index=True, right_index=True),
@@ -252,15 +252,15 @@ for organ in organ_list:
 
         # Optionally, save your train and test splits for each iteration
         # Save the data for each loop iteration
-        # X_train.to_csv("../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + organ + ".TRAIN.LPO.cl1sp" + rand_seed + ".tsv", sep='\t', index=True)
-        # X_test.to_csv("../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + organ + ".TEST.LPO.cl1sp" + rand_seed + ".tsv", sep='\t', index=True)
+        # X_train.to_csv("proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + organ + ".TRAIN.LPO.cl1sp" + rand_seed + ".tsv", sep='\t', index=True)
+        # X_test.to_csv("proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + organ + ".TEST.LPO.cl1sp" + rand_seed + ".tsv", sep='\t', index=True)
 
         # Break after the first iteration for testing; remove this to run for all splits
     if not train:
         res = pd.read_csv(f"gtex_outputs/{regr}_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + organ + "_" + rand_seed + "lpo" + ".tsv", sep='\t', index_col='SUBJID')
 
-    # res = calculate_yhat_and_agegap_with_nn(res)
-    res = calculate_lowess_yhat_and_agegap(res)
+    res = calculate_yhat_and_agegap_with_nn(res)
+    # res = calculate_lowess_yhat_and_agegap(res)
     res.to_csv(f"gtex_outputs/{regr}_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + organ + "_" + rand_seed + "lpo" + ".tsv", sep='\t', index=True)
     
     # all_tissue_res.loc[res.index, 'p_age_' + organ] = res["Predicted_Age"]
@@ -305,7 +305,7 @@ for organ in organ_list:
     plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
     # plt.show()
     # plt.savefig('gtex/logistic_PTyj_noGS_C10_tstScale_train_bs10.png')
-    split_id = f"cmn{rand_seed}"
+    split_id = f"cl1sp{rand_seed}"
     if regr == "lasso":
         plt.savefig("gtex_outputs/lasso_PTyj_nma_tstScale_redc" + gene_sort_crit + "_train_bs" + n_bs + "_" + split_id +  "_" + organ + ".png")
     elif regr == "ridge":

@@ -1,42 +1,35 @@
-# organage
+Place tissue-specific TPM expression data from [Adult GTEx v10](https://www.gtexportal.org/home/downloads/adult-gtex/bulk_tissue_expression#bulk_tissue_expression-gtex_analysis_v10-rna-seq-Gene_TPMs_by_tissue-container) in `gtex/datav10`
 
-A package to estimate organ-specific biological age using aging models trained on SomaScan plasma proteomics data (Oh and Rutledge et al. _Nature_ 2023 https://doi.org/10.1038/s41586-023-06802-1)  
+Place tissue-specific read count data from [Adult GTEx v10](https://www.gtexportal.org/home/downloads/adult-gtex/bulk_tissue_expression#bulk_tissue_expression-gtex_analysis_v10-rna-seq-Gene_read_counts_by_tissue-container) in `gtex/data`
 
-## System requirements
+Initial Clustering
+    Run gcttoCsv.py
+    Run the scripts in clustering/all_organ and clustering/per_organ
 
-### Hardware requirements
+Optimal Fixed point interpolation
+    true_age_interpolation.py
+    true_age_output_view.py
 
-organage package requires only a standard computer with enough RAM to support the in-memory operations.
+Feature Selection
+    1) Correlation: pick_genes.py
+    2) DeSeq:
+        deg_thresholding.py
+        deg_thresh_finetune.py
+        set optimal threshold from results of finetuning, in pick_deg_optim.py
+    3) Oh et. al.
+        identify_organ_enriched_genes.py
+        ////artery_coronary , aorta together as one organ
 
-### Software requirements
+Train-Test Splitting
+    stratified_split_dthhrdy.py
 
-#### OS Requirements
+Model Training and Testing 
+    train_gtex_all_<regr>.py
+    test_gtex_train.py
+    tissue_agegap_analytics_multi.py
+    > stf_sp_train_test_multi.sh
 
-This package is supported for macOS and Linux. The package has been tested on the following systems:
-- maxOS 11.7.1
-- Linux: CentOS 7.x
-
-#### Python dependencies
-
-- python>=3.9 and <=3.10
-- dill>=0.3.6
-- pandas>=1.5.3
-- scikit-learn==1.0.2. aging models were trained using this specific version of scikit-learn
-
-## Installation
-
-```bash
-$ pip install organage
-```
-
-## Usage
-
-- see docs/Predict organage example.ipynb
-
-## License
-
-`organage` was created by Hamilton Oh. It is licensed under the terms of the MIT license.
-
-## Credits
-
-`organage` was created with [`cookiecutter`](https://cookiecutter.readthedocs.io/en/latest/) and the `py-pkgs-cookiecutter` [template](https://github.com/py-pkgs/py-pkgs-cookiecutter).
+Leave-P-Out Train-Test for Downstream Analyses
+    > lpo_coeff_multi.sh
+    all_agegap_analytics.py
+    agegap_lpo_stats.py

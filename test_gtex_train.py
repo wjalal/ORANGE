@@ -23,28 +23,13 @@ def main (main=False, md_hot_organ = None, tissue=None, delete_model=False, deg_
     n_bs = sys.argv[2]
     split_id = sys.argv[3]
     regr = sys.argv[4]
-    ensemble_regrs = ['elasticnet', 'svr', 'pls']
-    tissue_ensmb_rate = {
-        'liver':                        [0.2, 0.4, 0.4],
-        'artery_aorta':                 [0.7, 0.1, 0.2],
-        'artery_coronary':              [0.7, 0.1, 0.2],
-        'brain_cortex':                 [0.2, 0.4, 0.4],
-        'brain_cerebellum':             [0.8, 0.1, 0.1],
-        'adrenal_gland':                [0.5, 0.2, 0.3],
-        'heart_atrial_appendage':       [0.3, 0.2, 0.5],
-        'pituitary':                    [0.3, 0.2, 0.5],
-        'adipose_subcutaneous':         [0.7, 0.1, 0.2],
-        'lung':                         [0.7, 0.1, 0.2],
-        'skin_sun_exposed_lower_leg':   [0.4, 0.1, 0.5],
-        'nerve_tibial':                 [0.7, 0.1, 0.2],
-    }
 
     if len(sys.argv) >= 6:
         lpo_sp = "_" + sys.argv[5]
     else:
         lpo_sp = ""
 
-    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+    if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
         print ("Invalid gene sort criteria")
         exit (1)
     if int(n_bs) > 500:
@@ -121,14 +106,14 @@ def main (main=False, md_hot_organ = None, tissue=None, delete_model=False, deg_
                 models_dict[organ]["aging_models"] = []
                 models_dict[organ]["aging_model_paths"] = []
                 # load protein zscore scaler
-                fn_protein_scaler = 'gtexV8_HC_based_'+organ+'_gene_zscore_scaler.pkl'
-                with open('gtex/train_splits/train_bs' + n_bs + '_' + split_id + lpo_sp + '/data/ml_models/gtexV8/HC/'+norm+'/'+organ+"/"+fn_protein_scaler, 'rb') as f_scaler:
+                fn_protein_scaler = 'gtexv10_HC_based_'+organ+'_gene_zscore_scaler.pkl'
+                with open('gtex/train_splits/train_bs' + n_bs + '_' + split_id + lpo_sp + '/data/ml_models/gtexv10/HC/'+norm+'/'+organ+"/"+fn_protein_scaler, 'rb') as f_scaler:
                     loaded_model = pickle.load(f_scaler)
                     models_dict[organ]["prot_scaler"] = loaded_model
 
                 for seed in bootstrap_seeds:
-                    fn_aging_model = 'gtexV8_HC_'+norm+'_' + regr + '_'+organ+'_seed'+str(seed)+'_aging_model.pkl'
-                    with open('gtex/train_splits/train_bs' + n_bs + '_' + split_id + lpo_sp + '/data/ml_models/gtexV8/HC/'+norm+'/'+organ+"/"+fn_aging_model, 'rb') as f_model:
+                    fn_aging_model = 'gtexv10_HC_'+norm+'_' + regr + '_'+organ+'_seed'+str(seed)+'_aging_model.pkl'
+                    with open('gtex/train_splits/train_bs' + n_bs + '_' + split_id + lpo_sp + '/data/ml_models/gtexv10/HC/'+norm+'/'+organ+"/"+fn_aging_model, 'rb') as f_model:
                         loaded_model = pickle.load(f_model)
                         models_dict[organ]["aging_models"].append(loaded_model)
                         models_dict[organ]["aging_model_paths"].append(f_model)
@@ -235,9 +220,9 @@ def main (main=False, md_hot_organ = None, tissue=None, delete_model=False, deg_
         # print ("Testing on trained model")
         data = CreateGTExTissueAgeObject(tissue)
         if main:
-            df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + tissue + ".TEST." + split_id + ".tsv", sep='\s+').set_index("Name")
+            df_prot = pd.read_csv(filepath_or_buffer="proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + tissue + ".TEST." + split_id + ".tsv", sep='\s+').set_index("Name")
         else:
-            df_prot = pd.read_csv(filepath_or_buffer="../../../gtex/proc/proc_data/reduced/corr" + gene_sort_crit + "/" + tissue + ".tsv", sep='\s+').set_index("Name")
+            df_prot = pd.read_csv(filepath_or_buffer="proc/proc_datav10/reduced/corr" + gene_sort_crit + "/" + tissue + ".tsv", sep='\s+').set_index("Name")
         df_prot.index.names = ['SUBJID']
         # print(md_hot)
         if not main:

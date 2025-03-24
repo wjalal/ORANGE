@@ -24,7 +24,7 @@ if len(sys.argv) >= 8:
 else:
     agg=""
 
-if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'AA':
+if gene_sort_crit != '20p' and gene_sort_crit != '1000' and gene_sort_crit != 'deg' and gene_sort_crit != 'oh':
     print ("Invalid gene sort criteria")
     exit (1)
 if int(n_bs) > 500:
@@ -91,7 +91,7 @@ for s in range (int(split_id_r1), int(split_id_r2)+1):
 
         # Set the minimum number of non-null columns required per row
     # min_non_null_columns = int(len(tissues)/2)
-    min_non_null_columns = 5
+    min_non_null_columns = 6
     # Filter rows with at least 6 non-null values
     all_tissue_res = all_tissue_res.dropna(thresh=min_non_null_columns+len(exclude_cols))
     print (all_tissue_res.shape)
